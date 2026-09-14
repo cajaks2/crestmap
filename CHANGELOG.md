@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.279 - 2026-09-14
+
+- Calibrate modeled current temperatures against fresh nearby stations, fading
+  corrections over eight miles and by elevation difference so adjacent locations
+  such as Chilao and Newcomb's Ranch no longer show implausible model splits.
+
 ### 0.1.278 - 2026-09-14
 
 - Keep the Newcomb's Ranch and Rock Store / Old Place temperatures visible as

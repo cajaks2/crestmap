@@ -156,6 +156,25 @@ def test_fresh_nws_station_observation_is_measured():
     }
 
 
+def test_nearby_station_calibrates_current_estimate_with_distance_fade():
+    estimates = [
+        {"name": "Near", "latitude": 34.33, "longitude": -118.00,
+         "elevation_m": 1643, "temperature_f": 72.0},
+        {"name": "Far", "latitude": 34.33, "longitude": -117.80,
+         "elevation_m": 1643, "temperature_f": 72.0},
+    ]
+    observations = [
+        {"name": "Chilao RAWS", "latitude": 34.33167, "longitude": -118.03028,
+         "elevation_m": 1661.16, "temperature_f": 79.0}
+    ]
+    weather.calibrate_estimates(estimates, observations)
+    assert 77.0 <= estimates[0]["temperature_f"] <= 79.0
+    assert estimates[0]["raw_temperature_f"] == 72.0
+    assert estimates[0]["calibrated_by"] == ["Chilao RAWS"]
+    assert estimates[1]["temperature_f"] == 72.0
+    assert "calibrated_by" not in estimates[1]
+
+
 def test_station_observation_remains_available_between_reports():
     station = weather.OBSERVATION_STATIONS["forest"][0]
     timestamp = dt.datetime.fromtimestamp(NOW - 7200, dt.timezone.utc).isoformat()
@@ -292,6 +311,7 @@ def test_endpoint_and_local_render(tmp_path, monkeypatch, region):
     assert "grayscale(${Math.round(ageProgress * 100)}%)" in rendered
     assert "National Weather Service" in rendered
     assert "Nearby modeled forecast" in rendered
+    assert "Adjusted using" in rendered
     assert "% humidity" in rendered
     assert 'class="temperature-popup__forecast"' in rendered
     assert 'class="temperature-popup__heading"' in rendered

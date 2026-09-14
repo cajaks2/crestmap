@@ -263,6 +263,8 @@ TEMPERATURE_JS = r"""
             return `<span class="temperature-popup__forecast-item"><span class="temperature-popup__forecast-time">${escapeHtml(hour)}</span><span class="temperature-popup__forecast-temp">${Math.round(item.temperature_f)}°</span></span>`;
           }).filter(Boolean).join("");
           const forecastCopy = forecast ? `<div class="temperature-popup__forecast"><div class="temperature-popup__forecast-title">${measured ? "Nearby modeled forecast" : "Hourly forecast"}</div><div class="temperature-popup__forecast-values">${forecast}</div></div>` : "";
+          const calibration = Array.isArray(point.calibrated_by) && point.calibrated_by.length
+            ? `<br>Adjusted using ${escapeHtml(point.calibrated_by.join(", "))}` : "";
           const {dx, dy} = placement;
           const badgeContent = `${landmarkIcon ? `<i class="temperature-landmark-icon" aria-hidden="true">${landmarkIcon}</i>` : ""}${measured ? '<i class="temperature-source-dot" aria-hidden="true"></i>' : ""}${degrees}°`;
           const marker = L.marker(latlng, {
@@ -272,7 +274,7 @@ TEMPERATURE_JS = r"""
           });
           const detail = measured
             ? `<div class="temperature-popup__heading"><div class="temperature-popup__reading">${degrees}°F</div><div class="temperature-popup__kind">Measured air temperature</div></div><div class="temperature-popup__location">${escapeHtml(point.name)}</div><div class="temperature-popup__meta">Station elevation ${elevation} ft${humidity}<br>Observed ${escapeHtml(valid)}</div>${forecastCopy}<div class="temperature-popup__source-note"><a class="temperature-popup__source" href="https://api.weather.gov/stations/${encodeURIComponent(point.station_id)}/observations/latest" target="_blank" rel="noopener">National Weather Service station</a><span class="temperature-popup__note"> · Forecast by Open-Meteo · Local conditions may differ.</span></div>`
-            : `<div class="temperature-popup__heading"><div class="temperature-popup__reading">${degrees}°F</div><div class="temperature-popup__kind">Estimated air temperature</div></div><div class="temperature-popup__location">${escapeHtml(point.name)}</div><div class="temperature-popup__meta">${elevation} ft elevation${humidity}<br>Valid ${escapeHtml(valid)}</div>${forecastCopy}<div class="temperature-popup__source-note"><a class="temperature-popup__source" href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo model</a><span class="temperature-popup__note"> · Air and road-surface temperatures may differ.</span></div>`;
+            : `<div class="temperature-popup__heading"><div class="temperature-popup__reading">${degrees}°F</div><div class="temperature-popup__kind">Estimated air temperature</div></div><div class="temperature-popup__location">${escapeHtml(point.name)}</div><div class="temperature-popup__meta">${elevation} ft elevation${humidity}<br>Valid ${escapeHtml(valid)}${calibration}</div>${forecastCopy}<div class="temperature-popup__source-note"><a class="temperature-popup__source" href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo model</a><span class="temperature-popup__note"> · Air and road-surface temperatures may differ.</span></div>`;
           marker.bindPopup(`<div class="temperature-popup">${detail}</div>`, {className: "temperature-map-popup", maxWidth: 280, offset: [0, -14], autoPanPaddingTopLeft: [24, 32], autoPanPaddingBottomRight: [24, 74]});
           marker.addTo(layer);
           if (measured && ageProgress > 0) {

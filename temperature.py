@@ -161,6 +161,7 @@ CACHE_SECONDS = 900
 MAX_AGE_SECONDS = 3600
 FORECAST_HOURS = 7
 POPUP_FORECAST_POINTS = 6
+STATION_CALIBRATION_RADIUS_MILES = 8.0
 _cache = {}
 _retry_after = {}
 _lock = threading.Lock()
@@ -172,6 +173,55 @@ class TemperatureUnavailable(Exception):
 
 def _number(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def _distance_miles(first, second):
+    """Approximate great-circle distance between two temperature points."""
+    latitude_1, longitude_1 = math.radians(first["latitude"]), math.radians(first["longitude"])
+    latitude_2, longitude_2 = math.radians(second["latitude"]), math.radians(second["longitude"])
+    delta_latitude = latitude_2 - latitude_1
+    delta_longitude = longitude_2 - longitude_1
+    value = (math.sin(delta_latitude / 2) ** 2
+             + math.cos(latitude_1) * math.cos(latitude_2)
+             * math.sin(delta_longitude / 2) ** 2)
+    return 3958.8 * 2 * math.asin(min(1, math.sqrt(value)))
+
+
+def calibrate_estimates(estimates, observations):
+    """Bias-correct current model estimates near fresh, elevation-similar stations."""
+    if not estimates or not observations:
+        return
+    station_biases = []
+    for observation in observations:
+        nearest = min(estimates, key=lambda point: _distance_miles(point, observation))
+        bias = max(-12.0, min(12.0, observation["temperature_f"] - nearest["temperature_f"]))
+        station_biases.append((observation, bias))
+    for estimate in estimates:
+        weighted_bias = 0.0
+        total_weight = 0.0
+        station_names = []
+        for observation, bias in station_biases:
+            distance = _distance_miles(estimate, observation)
+            if distance >= STATION_CALIBRATION_RADIUS_MILES:
+                continue
+            elevation_difference = abs(estimate["elevation_m"] - observation["elevation_m"])
+            distance_weight = 1 - distance / STATION_CALIBRATION_RADIUS_MILES
+            elevation_weight = max(0.15, 1 - elevation_difference / 600)
+            weight = distance_weight * elevation_weight
+            weighted_bias += bias * weight
+            total_weight += weight
+            station_names.append(observation["name"])
+        if not total_weight:
+            continue
+        correction = weighted_bias / total_weight
+        # Preserve the distance/elevation fade instead of normalizing a lone
+        # station back to its full bias.
+        correction *= min(1, total_weight)
+        if abs(correction) < 0.1:
+            continue
+        estimate["raw_temperature_f"] = estimate["temperature_f"]
+        estimate["temperature_f"] = round(estimate["temperature_f"] + correction, 1)
+        estimate["calibrated_by"] = station_names
 
 
 def parse_station_observation(payload, station, now):
@@ -387,6 +437,7 @@ def load_temperatures(region):
                 record_provider("temperature", region, "nws_stations", outcome, count)
         if observations:
             estimates = result["points"]
+            calibrate_estimates(estimates, observations)
             for observation in observations:
                 nearest = min(
                     estimates,
