@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.276 - 2026-09-14
+
+- Reduce the visual weight and size of temperature chips, and distribute local
+  topographic highs and lows across eight geographic cells so useful off-road
+  elevation context remains visible throughout each region.
+
 ### 0.1.275 - 2026-09-14
 
 - Prioritize measured and off-road terrain readings, add zoom-aware temperature

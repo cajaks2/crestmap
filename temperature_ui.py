@@ -14,14 +14,15 @@ TEMPERATURE_CSS = """
       box-sizing: border-box; width: var(--temperature-width); height: var(--temperature-height);
       pointer-events: auto; display: flex; align-items: center; justify-content: center;
       gap: 1px; color: var(--temperature-ink); text-align: center;
-      font: 750 11px/14px -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--temperature-fill); border: 1px solid var(--temperature-stroke);
-      border-radius: 6px; box-shadow: 0 1px 2px rgba(24,32,38,.18);
+      font: 700 10px/13px -apple-system, BlinkMacSystemFont, sans-serif;
+      background: color-mix(in srgb, var(--temperature-fill) 48%, rgba(255,255,255,.72));
+      border: 1px solid color-mix(in srgb, var(--temperature-stroke) 58%, transparent);
+      border-radius: 5px; box-shadow: 0 1px 1px rgba(24,32,38,.10); opacity: .82;
     }
     .temperature-label .temperature-badge::after { content: ""; position: absolute; inset: -9px; }
     .temperature-terrain-symbol { font-style: normal; font-size: 8px; line-height: 1; }
     .temperature-source-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
-    .temperature-label.is-observation .temperature-badge { box-shadow: 0 0 0 2px rgba(255,255,255,.8), 0 1px 5px rgba(24,32,38,.24); }
+    .temperature-label.is-observation .temperature-badge { opacity: .92; box-shadow: 0 0 0 1px rgba(255,255,255,.65); }
     .temperature-label.is-freezing { --temperature-fill: rgba(219,234,254,.96); --temperature-stroke: #2563a8; --temperature-ink: #173f70; }
     .temperature-label.is-cold { --temperature-fill: rgba(207,250,254,.96); --temperature-stroke: #0e7490; --temperature-ink: #15586b; }
     .temperature-label.is-cool { --temperature-fill: rgba(204,251,241,.96); --temperature-stroke: #0f766e; --temperature-ink: #155e58; }
@@ -30,7 +31,7 @@ TEMPERATURE_CSS = """
     .temperature-label.is-hot { --temperature-fill: rgba(255,226,183,.97); --temperature-stroke: #cb5f0a; --temperature-ink: #883b08; }
     .temperature-label.is-very-hot { --temperature-fill: rgba(255,218,205,.97); --temperature-stroke: #c93624; --temperature-ink: #87251a; }
     .temperature-label.is-extreme { --temperature-fill: rgba(254,226,226,.97); --temperature-stroke: #b91c1c; --temperature-ink: #861818; }
-    .temperature-label:hover .temperature-badge { filter: saturate(1.12); }
+    .temperature-label:hover .temperature-badge { filter: saturate(1.12); opacity: 1; }
     .temperature-label:focus-visible .temperature-badge { outline: 2px solid #263f2e; outline-offset: 2px; }
     .temperature-map-popup { position: absolute; padding-bottom: 10px; text-align: left; }
     .temperature-map-popup .leaflet-popup-content-wrapper {
@@ -223,7 +224,7 @@ TEMPERATURE_JS = r"""
           if (r.width && r.height) occupied.push({left: r.left - mapRect.left, right: r.right - mapRect.left,
             top: r.top - mapRect.top, bottom: r.bottom - mapRect.top});
         });
-        const height = 20;
+        const height = 18;
         const activeKeys = new Set();
         const placedTemperatures = [];
         const displayRank = point => point.kind === "observation" ? 5 : point.terrain_extreme ? 4 : point.road ? 3 : 0;
@@ -238,7 +239,7 @@ TEMPERATURE_JS = r"""
           const size = map.getSize();
           const degrees = Math.round(point.temperature_f);
           if (shouldSkipTemperature(pixel, degrees, placedTemperatures, map.getZoom())) continue;
-          const width = point.terrain_extreme ? 42 : degrees >= 100 ? 38 : 34;
+          const width = point.terrain_extreme ? 38 : degrees >= 100 ? 35 : 31;
           const key = `${point.kind}:${point.latitude}:${point.longitude}:${point.name}`;
           activeKeys.add(key);
           const placement = placeTemperatureLabel(pixel, size, occupied, width, height, previousPlacements.get(key));

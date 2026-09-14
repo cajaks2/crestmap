@@ -127,10 +127,13 @@ def test_only_topographic_extremes_remain_off_road(region):
         row["elevation"] = 100 + index
     result = weather.parse_estimates(data, region, NOW)
     terrain = [point for point in result["points"] if not point["road"]]
-    assert len(terrain) == weather.TERRAIN_HIGH_POINT_COUNT + weather.TERRAIN_LOW_POINT_COUNT
-    assert sum(point["terrain_extreme"] == "high" for point in terrain) == weather.TERRAIN_HIGH_POINT_COUNT
-    assert sum(point["terrain_extreme"] == "low" for point in terrain) == weather.TERRAIN_LOW_POINT_COUNT
-    assert {point["name"] for point in terrain} == {"Topographic high", "Topographic low"}
+    assert 4 <= len(terrain) <= weather.TERRAIN_GRID_COLUMNS * weather.TERRAIN_GRID_ROWS
+    high_count = sum(point["terrain_extreme"] == "high" for point in terrain)
+    low_count = sum(point["terrain_extreme"] == "low" for point in terrain)
+    assert abs(high_count - low_count) <= 1
+    assert {point["name"] for point in terrain} == {
+        "Local topographic high", "Local topographic low"
+    }
 
 
 def test_fresh_nws_station_observation_is_measured():

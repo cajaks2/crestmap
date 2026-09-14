@@ -65,8 +65,8 @@ ROAD_NAMES = {
     "mount_baldy": "Mount Baldy Road",
 }
 ROAD_SAMPLE_INTERVAL_MILES = 2.5
-TERRAIN_HIGH_POINT_COUNT = 3
-TERRAIN_LOW_POINT_COUNT = 2
+TERRAIN_GRID_COLUMNS = 4
+TERRAIN_GRID_ROWS = 2
 
 
 def forest_road_sample_points():
@@ -301,23 +301,26 @@ def parse_estimates(payload, region, now):
         raise TemperatureUnavailable()
     road_points = [point for point in points if point["road"]]
     terrain_points = [point for point in points if not point["road"]]
-    low_points = sorted(terrain_points, key=lambda point: point["elevation_m"])[
-        :TERRAIN_LOW_POINT_COUNT
-    ]
-    low_ids = {id(point) for point in low_points}
-    high_points = [
-        point for point in sorted(
-            terrain_points, key=lambda point: point["elevation_m"], reverse=True
+    lat_min, lat_max, lon_min, lon_max = REGION_BOUNDS[region]
+    cells = {}
+    for point in terrain_points:
+        column = min(TERRAIN_GRID_COLUMNS - 1, max(0, int(
+            (point["longitude"] - lon_min) / (lon_max - lon_min) * TERRAIN_GRID_COLUMNS
+        )))
+        row = min(TERRAIN_GRID_ROWS - 1, max(0, int(
+            (point["latitude"] - lat_min) / (lat_max - lat_min) * TERRAIN_GRID_ROWS
+        )))
+        cells.setdefault((row, column), []).append(point)
+    terrain_extremes = []
+    for (row, column), candidates in sorted(cells.items()):
+        role = "high" if (row + column) % 2 else "low"
+        point = (max if role == "high" else min)(
+            candidates, key=lambda item: item["elevation_m"]
         )
-        if id(point) not in low_ids
-    ][:TERRAIN_HIGH_POINT_COUNT]
-    for point in low_points:
-        point["terrain_extreme"] = "low"
-        point["name"] = "Topographic low"
-    for point in high_points:
-        point["terrain_extreme"] = "high"
-        point["name"] = "Topographic high"
-    points = road_points + high_points + low_points
+        point["terrain_extreme"] = role
+        point["name"] = f"Local topographic {role}"
+        terrain_extremes.append(point)
+    points = road_points + terrain_extremes
     return {"region": region, "source": "Open-Meteo", "points": points,
             "fetched_at": dt.datetime.fromtimestamp(now, dt.timezone.utc).isoformat()}
 
