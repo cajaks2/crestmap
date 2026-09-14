@@ -161,7 +161,8 @@ CACHE_SECONDS = 900
 MAX_AGE_SECONDS = 3600
 FORECAST_HOURS = 7
 POPUP_FORECAST_POINTS = 6
-STATION_CALIBRATION_RADIUS_MILES = 8.0
+STATION_CALIBRATION_RADIUS_MILES = 3.5
+STATION_CALIBRATION_ELEVATION_LIMIT_METERS = 250
 _cache = {}
 _retry_after = {}
 _lock = threading.Lock()
@@ -205,8 +206,10 @@ def calibrate_estimates(estimates, observations):
             if distance >= STATION_CALIBRATION_RADIUS_MILES:
                 continue
             elevation_difference = abs(estimate["elevation_m"] - observation["elevation_m"])
+            if elevation_difference >= STATION_CALIBRATION_ELEVATION_LIMIT_METERS:
+                continue
             distance_weight = 1 - distance / STATION_CALIBRATION_RADIUS_MILES
-            elevation_weight = max(0.15, 1 - elevation_difference / 600)
+            elevation_weight = 1 - elevation_difference / STATION_CALIBRATION_ELEVATION_LIMIT_METERS
             weight = distance_weight * elevation_weight
             weighted_bias += bias * weight
             total_weight += weight

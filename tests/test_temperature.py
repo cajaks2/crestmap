@@ -168,11 +168,21 @@ def test_nearby_station_calibrates_current_estimate_with_distance_fade():
          "elevation_m": 1661.16, "temperature_f": 79.0}
     ]
     weather.calibrate_estimates(estimates, observations)
-    assert 77.0 <= estimates[0]["temperature_f"] <= 79.0
+    assert 75.0 <= estimates[0]["temperature_f"] <= 76.0
     assert estimates[0]["raw_temperature_f"] == 72.0
     assert estimates[0]["calibrated_by"] == ["Chilao RAWS"]
     assert estimates[1]["temperature_f"] == 72.0
     assert "calibrated_by" not in estimates[1]
+
+
+def test_station_calibration_rejects_large_elevation_difference():
+    estimates = [{"name": "Canyon", "latitude": 34.33, "longitude": -118.00,
+                  "elevation_m": 1200, "temperature_f": 72.0}]
+    observations = [{"name": "Ridge station", "latitude": 34.331, "longitude": -118.001,
+                     "elevation_m": 1661, "temperature_f": 79.0}]
+    weather.calibrate_estimates(estimates, observations)
+    assert estimates[0]["temperature_f"] == 72.0
+    assert "calibrated_by" not in estimates[0]
 
 
 def test_station_observation_remains_available_between_reports():

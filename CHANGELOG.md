@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.280 - 2026-09-14
+
+- Limit station calibration to 3.5 miles and exclude modeled points whose
+  elevation differs from the station by 250 meters or more, preserving mountain
+  elevation effects while smoothing only very local model bias.
+
 ### 0.1.279 - 2026-09-14
 
 - Calibrate modeled current temperatures against fresh nearby stations, fading
