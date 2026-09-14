@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.269 - 2026-09-14
+
+- Make MacBook trackpad map zoom substantially more responsive and restore useful
+  mile-marker density sooner, including half- and quarter-mile sampling at close
+  zoom levels where surveyed source points support it.
+
 ### 0.1.268 - 2026-09-14
 
 - Increase desktop trackpad map-zoom responsiveness and replace the fractional

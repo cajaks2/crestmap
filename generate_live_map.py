@@ -3481,8 +3481,8 @@ def build_html(
       keyboard: false,
       zoomControl: false,
       zoomSnap: 0.25,
-      wheelDebounceTime: 25,
-      wheelPxPerZoomLevel: 35,
+      wheelDebounceTime: 15,
+      wheelPxPerZoomLevel: 12,
       zoomAnimation: true,
       fadeAnimation: !compactMapRendering,
       markerZoomAnimation: true
@@ -3660,10 +3660,11 @@ def build_html(
 
     function mileMarkerStep(zoom) {{
       if (zoom < 11.5) return null;
-      if (zoom < 13.25) return 10;
-      if (zoom < 14.5) return 5;
-      if (zoom < 15.75) return 2;
-      if (zoom < 17) return 1;
+      if (zoom < 12.5) return 5;
+      if (zoom < 13.5) return 2;
+      if (zoom < 14.5) return 1;
+      if (zoom < 15.5) return 0.5;
+      if (zoom < 16.5) return 0.25;
       return 0;
     }}
 

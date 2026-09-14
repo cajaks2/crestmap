@@ -891,8 +891,8 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "doubleClickZoom: true" in html
     assert "keyboard: false" in html
     assert "preferCanvas: false" in html
-    assert "wheelDebounceTime: 25" in html
-    assert "wheelPxPerZoomLevel: 35" in html
+    assert "wheelDebounceTime: 15" in html
+    assert "wheelPxPerZoomLevel: 12" in html
     assert "markerZoomAnimation: true" in html
     assert 'const compactMapRendering = window.matchMedia("(max-width: 1000px)").matches' in html
     assert "fadeAnimation: !compactMapRendering" in html
@@ -927,10 +927,11 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "function setupDoubleTapZoom" in html
     assert "setupDoubleTapZoom();" in html
     assert "if (zoom < 11.5) return null;" in html
-    assert "if (zoom < 13.25) return 10;" in html
-    assert "if (zoom < 14.5) return 5;" in html
-    assert "if (zoom < 15.75) return 2;" in html
-    assert "if (zoom < 17) return 1;" in html
+    assert "if (zoom < 12.5) return 5;" in html
+    assert "if (zoom < 13.5) return 2;" in html
+    assert "if (zoom < 14.5) return 1;" in html
+    assert "if (zoom < 15.5) return 0.5;" in html
+    assert "if (zoom < 16.5) return 0.25;" in html
 
     malibu_html = build_html(
         incidents,
