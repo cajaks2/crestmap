@@ -35,6 +35,12 @@ def test_temperature_labels_stay_close_to_coordinate_and_declutter_overlaps():
       const incident = {left: 140, right: 180, top: 200, bottom: 240};
       assert.equal(placeTemperatureLabel(pixel, size, [incident], 42, 26), null);
       assert.equal(placeTemperatureLabel(pixel,size,[{left:0,right:390,top:0,bottom:560}],42,26),null);
+      const placed = [{pixel:{x:100,y:100},degrees:74}];
+      assert.equal(shouldSkipTemperature({x:150,y:100},75,placed,12),true,
+        'enforce minimum spacing for different nearby values');
+      assert.equal(shouldSkipTemperature({x:210,y:100},74,placed,12),true,
+        'suppress the same rounded value across the wider duplicate radius');
+      assert.equal(shouldSkipTemperature({x:240,y:100},74,placed,12),false);
     """)
 
 

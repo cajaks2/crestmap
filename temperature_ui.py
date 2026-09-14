@@ -135,7 +135,7 @@ TEMPERATURE_JS = r"""
         button.classList.toggle("is-active", enabled);
         button.querySelector(".view-menu-description").textContent = !enabled ? "Hidden from map"
           : state === "loading" ? "Loading estimates…" : state === "error" ? "Estimates unavailable · retry by toggling"
-          : "Measured + estimated °F · more detail as you zoom";
+          : "Roads + terrain highs/lows · more detail as you zoom";
         button.title = `${enabled ? "Hide" : "Show"} estimated air temperatures`;
         updateLoadStatus();
       }
@@ -187,6 +187,20 @@ TEMPERATURE_JS = r"""
         if (degrees < 105) return "very-hot";
         return "extreme";
       }
+      function temperatureSpacing(zoom) {
+        if (zoom < 13) return {minimum: 64, duplicate: 130};
+        if (zoom < 15) return {minimum: 52, duplicate: 105};
+        if (zoom < 16.5) return {minimum: 40, duplicate: 80};
+        return {minimum: 30, duplicate: 60};
+      }
+      function shouldSkipTemperature(pixel, degrees, placed, zoom) {
+        const spacing = temperatureSpacing(zoom);
+        return placed.some(item => {
+          const distance = Math.hypot(pixel.x - item.pixel.x, pixel.y - item.pixel.y);
+          return distance < spacing.minimum
+            || (item.degrees === degrees && distance < spacing.duplicate);
+        });
+      }
       // TEMPERATURE_PLACEMENT_END
       function renderTemperatures() {
         layer.clearLayers();
@@ -211,7 +225,8 @@ TEMPERATURE_JS = r"""
         });
         const height = 20;
         const activeKeys = new Set();
-        const displayRank = point => point.kind === "observation" ? 4 : point.road ? 3 : point.terrain_extreme ? 2 : 0;
+        const placedTemperatures = [];
+        const displayRank = point => point.kind === "observation" ? 5 : point.terrain_extreme ? 4 : point.road ? 3 : 0;
         const orderedPoints = [...points].sort((a, b) => displayRank(b) - displayRank(a));
         for (const point of orderedPoints) {
           const measured = point.kind === "observation";
@@ -222,6 +237,7 @@ TEMPERATURE_JS = r"""
           const pixel = map.latLngToContainerPoint(latlng);
           const size = map.getSize();
           const degrees = Math.round(point.temperature_f);
+          if (shouldSkipTemperature(pixel, degrees, placedTemperatures, map.getZoom())) continue;
           const width = point.terrain_extreme ? 42 : degrees >= 100 ? 38 : 34;
           const key = `${point.kind}:${point.latitude}:${point.longitude}:${point.name}`;
           activeKeys.add(key);
@@ -229,6 +245,7 @@ TEMPERATURE_JS = r"""
           if (!placement) continue; // All nearby positions are occupied; never cover an incident.
           previousPlacements.set(key, placement.index);
           occupied.push(placement.box);
+          placedTemperatures.push({pixel, degrees});
           const elevation = Math.round(point.elevation_m * 3.28084).toLocaleString();
           const validDate = new Date(point.valid_at);
           const valid = validDate.toLocaleString([], {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"});

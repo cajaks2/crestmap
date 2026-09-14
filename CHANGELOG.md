@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.275 - 2026-09-14
+
+- Prioritize measured and off-road terrain readings, add zoom-aware temperature
+  spacing, and suppress repeated rounded values across a wider radius so nearby
+  duplicate readings no longer overwhelm incidents or map geography.
+
 ### 0.1.274 - 2026-09-14
 
 - Move temperature chips just beside their road coordinates with a compact

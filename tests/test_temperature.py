@@ -259,6 +259,8 @@ def test_endpoint_and_local_render(tmp_path, monkeypatch, region):
     assert '!point.road && !point.terrain_extreme' in rendered
     assert "function placeTemperatureLabel" in rendered
     assert "function temperatureBand" in rendered
+    assert "function shouldSkipTemperature" in rendered
+    assert "duplicate: 130" in rendered
     assert 'if (degrees < 85) return "warm"' in rendered
     assert 'if (degrees < 105) return "very-hot"' in rendered
     assert 'return "extreme"' in rendered
@@ -269,7 +271,7 @@ def test_endpoint_and_local_render(tmp_path, monkeypatch, region):
     assert "temperature-leader" not in rendered
     assert "occupied.push(placement.box)" in rendered
     assert 'maxWidth: 280, offset: [0, -14]' in rendered
-    assert "Measured + estimated" in rendered
+    assert "Roads + terrain highs/lows" in rendered
     assert "Loading temperatures…" in rendered
     assert "Temperatures unavailable · Tap to retry" in rendered
     assert "left: 50%; top: 54px" in rendered
