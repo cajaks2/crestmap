@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.268 - 2026-09-14
+
+- Increase desktop trackpad map-zoom responsiveness and replace the fractional
+  mile-marker zoom discontinuity with progressively denser 10-, 5-, 2-, and
+  1-mile sampling as users zoom closer.
+
 ### 0.1.267 - 2026-09-11
 
 - Hide the mobile incident-list drag handle and close button in the desktop

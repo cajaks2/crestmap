@@ -826,10 +826,6 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert 'data-mile-markers-toggle' in html
     assert "const roadwayMileMarkers" in html
     assert "function renderMileMarkers" in html
-    assert "if (zoom <= 11) return null" in html
-    assert "if (zoom === 12) return 5" in html
-    assert "if (zoom <= 15) return 1" in html
-    assert "if (zoom <= 15) return 1;\n      return 0;" in html
     assert "if (!step) return points" in html
     assert "More detail as you zoom" in html
     assert "if (step === null) return" in html
@@ -895,6 +891,8 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "doubleClickZoom: true" in html
     assert "keyboard: false" in html
     assert "preferCanvas: false" in html
+    assert "wheelDebounceTime: 25" in html
+    assert "wheelPxPerZoomLevel: 35" in html
     assert "markerZoomAnimation: true" in html
     assert 'const compactMapRendering = window.matchMedia("(max-width: 1000px)").matches' in html
     assert "fadeAnimation: !compactMapRendering" in html
@@ -928,6 +926,11 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "L.circleMarker" not in html
     assert "function setupDoubleTapZoom" in html
     assert "setupDoubleTapZoom();" in html
+    assert "if (zoom < 11.5) return null;" in html
+    assert "if (zoom < 13.25) return 10;" in html
+    assert "if (zoom < 14.5) return 5;" in html
+    assert "if (zoom < 15.75) return 2;" in html
+    assert "if (zoom < 17) return 1;" in html
 
     malibu_html = build_html(
         incidents,
