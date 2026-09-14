@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.278 - 2026-09-14
+
+- Keep the Newcomb's Ranch and Rock Store / Old Place temperatures visible as
+  priority landmarks, marked with compact evergreen-tree and rock icons.
+
 ### 0.1.277 - 2026-09-14
 
 - Remove the ambiguous up/down terrain triangles from temperature readings and

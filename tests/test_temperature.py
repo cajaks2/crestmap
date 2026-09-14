@@ -264,6 +264,11 @@ def test_endpoint_and_local_render(tmp_path, monkeypatch, region):
     assert "function temperatureBand" in rendered
     assert "function shouldSkipTemperature" in rendered
     assert "duplicate: 130" in rendered
+    assert 'point.name === "Newcomb\'s Ranch" ? "🌲"' in rendered
+    assert 'point.name === "Rock Store / Old Place area" ? "🪨"' in rendered
+    assert "if (!point.priority && shouldSkipTemperature" in rendered
+    assert "if (!placement && point.priority)" in rendered
+    assert 'class="temperature-landmark-icon"' in rendered
     assert 'if (degrees < 85) return "warm"' in rendered
     assert 'if (degrees < 105) return "very-hot"' in rendered
     assert 'return "extreme"' in rendered
