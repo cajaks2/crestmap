@@ -4,29 +4,36 @@ import json
 
 TEMPERATURE_CSS = """
     .temperature-label { background: transparent; border: 0; pointer-events: none; }
-    .temperature-label::before {
-      content: ""; position: absolute; left: -2px; top: -2px; width: 4px; height: 4px;
-      border-radius: 50%; background: #687162; box-shadow: 0 0 0 1px #ffffffb3;
-    }
-    .temperature-label span {
+    .temperature-label .temperature-badge {
       position: absolute; left: var(--temperature-x); top: var(--temperature-y); display: block;
       box-sizing: border-box; width: var(--temperature-width); height: var(--temperature-height);
       pointer-events: auto; display: flex; align-items: center; justify-content: center;
-      color: #354333; text-align: center; font: 600 12px/16px -apple-system, BlinkMacSystemFont, sans-serif;
-      text-shadow: -1px -1px 0 #fbfcf8, 1px -1px 0 #fbfcf8, -1px 1px 0 #fbfcf8, 1px 1px 0 #fbfcf8, 0 0 3px #fff;
+      gap: 2px; color: var(--temperature-ink); text-align: center;
+      font: 750 12px/16px -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--temperature-fill); border: 1px solid var(--temperature-stroke);
+      border-radius: 8px; box-shadow: 0 1px 4px rgba(24,32,38,.20); isolation: isolate;
     }
-    .temperature-label.is-observation::before {
-      left: -4px; top: -4px; width: 8px; height: 8px; background: #27764e;
-      box-shadow: 0 0 0 2px #f8fbf7, 0 0 0 3px #27764e;
+    .temperature-anchor {
+      position: absolute; z-index: -1; left: var(--temperature-anchor-x); top: var(--temperature-anchor-y);
+      width: var(--temperature-anchor-length); height: 0; border-top: 2px solid var(--temperature-stroke);
+      transform: rotate(var(--temperature-anchor-angle)); transform-origin: 0 50%; pointer-events: none;
     }
-    .temperature-label.is-observation span {
-      padding: 2px 5px; color: #204c34;
-      background: rgba(248,251,247,.96); border: 1px solid #73a989;
-      border-radius: 9px; box-shadow: 0 1px 4px rgba(27,67,45,.20);
-      font-weight: 700; text-shadow: none;
+    .temperature-anchor::after {
+      content: ""; position: absolute; right: -3px; top: -3px; width: 5px; height: 5px;
+      border: 1px solid rgba(255,255,255,.92); border-radius: 50%; background: var(--temperature-stroke);
     }
-    .temperature-label:hover span { color: #263122; }
-    .temperature-label:focus-visible span { outline: 2px solid #465a3d; border-radius: 3px; }
+    .temperature-terrain-symbol { font-style: normal; font-size: 10px; line-height: 1; }
+    .temperature-source-dot { width: 5px; height: 5px; border: 1px solid currentColor; border-radius: 50%; background: currentColor; }
+    .temperature-label.is-observation .temperature-badge { box-shadow: 0 0 0 2px rgba(255,255,255,.8), 0 1px 5px rgba(24,32,38,.24); }
+    .temperature-label.is-freezing { --temperature-fill: rgba(219,234,254,.96); --temperature-stroke: #2563a8; --temperature-ink: #173f70; }
+    .temperature-label.is-cold { --temperature-fill: rgba(207,250,254,.96); --temperature-stroke: #0e7490; --temperature-ink: #15586b; }
+    .temperature-label.is-cool { --temperature-fill: rgba(204,251,241,.96); --temperature-stroke: #0f766e; --temperature-ink: #155e58; }
+    .temperature-label.is-mild { --temperature-fill: rgba(236,246,219,.96); --temperature-stroke: #5b7f35; --temperature-ink: #3f5f26; }
+    .temperature-label.is-warm { --temperature-fill: rgba(254,243,199,.97); --temperature-stroke: #a16207; --temperature-ink: #754806; }
+    .temperature-label.is-hot { --temperature-fill: rgba(255,237,213,.97); --temperature-stroke: #c2410c; --temperature-ink: #8f2f0b; }
+    .temperature-label.is-extreme { --temperature-fill: rgba(254,226,226,.97); --temperature-stroke: #b91c1c; --temperature-ink: #861818; }
+    .temperature-label:hover .temperature-badge { filter: saturate(1.12); }
+    .temperature-label:focus-visible .temperature-badge { outline: 2px solid #263f2e; outline-offset: 2px; }
     .temperature-map-popup { position: absolute; padding-bottom: 10px; text-align: left; }
     .temperature-map-popup .leaflet-popup-content-wrapper {
       background: #fbfcf8; border: 1px solid #c8cec3; border-radius: 10px;
@@ -176,6 +183,25 @@ TEMPERATURE_JS = r"""
         }
         return null;
       }
+      function temperatureBand(degrees) {
+        if (degrees < 40) return "freezing";
+        if (degrees < 55) return "cold";
+        if (degrees < 70) return "cool";
+        if (degrees < 85) return "mild";
+        if (degrees < 95) return "warm";
+        if (degrees < 105) return "hot";
+        return "extreme";
+      }
+      function anchorGeometry(dx, dy, width, height) {
+        const anchorX = -dx;
+        const anchorY = -dy;
+        const edgeX = Math.max(0, Math.min(width, anchorX));
+        const edgeY = Math.max(0, Math.min(height, anchorY));
+        const deltaX = anchorX - edgeX;
+        const deltaY = anchorY - edgeY;
+        return {x: edgeX, y: edgeY, length: Math.hypot(deltaX, deltaY),
+          angle: Math.atan2(deltaY, deltaX) * 180 / Math.PI};
+      }
       // TEMPERATURE_PLACEMENT_END
       function renderTemperatures() {
         layer.clearLayers();
@@ -198,7 +224,6 @@ TEMPERATURE_JS = r"""
           if (r.width && r.height) occupied.push({left: r.left - mapRect.left, right: r.right - mapRect.left,
             top: r.top - mapRect.top, bottom: r.bottom - mapRect.top});
         });
-        const width = 42;
         const height = window.matchMedia('(pointer: coarse)').matches ? 36 : 26;
         const activeKeys = new Set();
         const displayRank = point => point.kind === "observation" ? 4 : point.road ? 3 : point.terrain_extreme ? 2 : 0;
@@ -211,13 +236,14 @@ TEMPERATURE_JS = r"""
           if (!map.getBounds().contains(latlng)) continue;
           const pixel = map.latLngToContainerPoint(latlng);
           const size = map.getSize();
+          const degrees = Math.round(point.temperature_f);
+          const width = point.terrain_extreme ? 54 : 44;
           const key = `${point.kind}:${point.latitude}:${point.longitude}:${point.name}`;
           activeKeys.add(key);
           const placement = placeTemperatureLabel(pixel, size, occupied, width, height, previousPlacements.get(key));
           if (!placement) continue; // All nearby positions are occupied; never cover an incident.
           previousPlacements.set(key, placement.index);
           occupied.push(placement.box);
-          const degrees = Math.round(point.temperature_f);
           const elevation = Math.round(point.elevation_m * 3.28084).toLocaleString();
           const validDate = new Date(point.valid_at);
           const valid = validDate.toLocaleString([], {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"});
@@ -232,10 +258,13 @@ TEMPERATURE_JS = r"""
           }).filter(Boolean).join("");
           const forecastCopy = forecast ? `<div class="temperature-popup__forecast"><div class="temperature-popup__forecast-title">${measured ? "Nearby modeled forecast" : "Hourly forecast"}</div><div class="temperature-popup__forecast-values">${forecast}</div></div>` : "";
           const {dx, dy} = placement;
+          const anchor = anchorGeometry(dx, dy, width, height);
+          const terrainSymbol = point.terrain_extreme === "high" ? "▲" : point.terrain_extreme === "low" ? "▼" : "";
+          const badgeContent = `${terrainSymbol ? `<em class="temperature-terrain-symbol" aria-hidden="true">${terrainSymbol}</em>` : ""}${measured ? '<i class="temperature-source-dot" aria-hidden="true"></i>' : ""}${degrees}°`;
           const marker = L.marker(latlng, {
             pane: "temperatures", keyboard: true, riseOnHover: false,
             title: `${point.name}: ${degrees}°F, ${measured ? "measured" : "estimated"} air temperature`,
-            icon: L.divIcon({className: `temperature-label${measured ? " is-observation" : ""}`, html: `<span style="--temperature-x:${dx}px;--temperature-y:${dy}px;--temperature-width:${width}px;--temperature-height:${height}px">${degrees}°</span>`, iconSize: [0, 0], iconAnchor: [0, 0]})
+            icon: L.divIcon({className: `temperature-label is-${temperatureBand(degrees)}${measured ? " is-observation" : ""}`, html: `<span class="temperature-badge" style="--temperature-x:${dx}px;--temperature-y:${dy}px;--temperature-width:${width}px;--temperature-height:${height}px"><i class="temperature-anchor" aria-hidden="true" style="--temperature-anchor-x:${anchor.x}px;--temperature-anchor-y:${anchor.y}px;--temperature-anchor-length:${anchor.length}px;--temperature-anchor-angle:${anchor.angle}deg"></i>${badgeContent}</span>`, iconSize: [0, 0], iconAnchor: [0, 0]})
           });
           const detail = measured
             ? `<div class="temperature-popup__heading"><div class="temperature-popup__reading">${degrees}°F</div><div class="temperature-popup__kind">Measured air temperature</div></div><div class="temperature-popup__location">${escapeHtml(point.name)}</div><div class="temperature-popup__meta">Station elevation ${elevation} ft${humidity}<br>Observed ${escapeHtml(valid)}</div>${forecastCopy}<div class="temperature-popup__source-note"><a class="temperature-popup__source" href="https://api.weather.gov/stations/${encodeURIComponent(point.station_id)}/observations/latest" target="_blank" rel="noopener">National Weather Service station</a><span class="temperature-popup__note"> · Forecast by Open-Meteo · Local conditions may differ.</span></div>`

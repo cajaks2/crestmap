@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.272 - 2026-09-14
+
+- Replace detached temperature numbers with coordinate-anchored, color-banded
+  badges; distinguish modeled terrain highs and lows with compact symbols and
+  reserve red tones for temperatures of 95°F and above.
+
 ### 0.1.271 - 2026-09-14
 
 - Focus temperature labels on road corridors and retain only a small set of
