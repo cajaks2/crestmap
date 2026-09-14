@@ -259,7 +259,8 @@ def test_endpoint_and_local_render(tmp_path, monkeypatch, region):
     assert '!point.road && !point.terrain_extreme' in rendered
     assert "function placeTemperatureLabel" in rendered
     assert "function temperatureBand" in rendered
-    assert 'if (degrees < 105) return "hot"' in rendered
+    assert 'if (degrees < 85) return "warm"' in rendered
+    assert 'if (degrees < 105) return "very-hot"' in rendered
     assert 'return "extreme"' in rendered
     assert "function anchorGeometry" not in rendered
     assert 'class="temperature-anchor"' not in rendered

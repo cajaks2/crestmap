@@ -4,6 +4,11 @@ import json
 
 TEMPERATURE_CSS = """
     .temperature-label { background: transparent; border: 0; pointer-events: none; }
+    .temperature-label::before {
+      content: ""; position: absolute; left: -3px; top: -3px; width: 6px; height: 6px;
+      box-sizing: border-box; border: 1px solid rgba(255,255,255,.9); border-radius: 50%;
+      background: var(--temperature-stroke); box-shadow: 0 0 0 1px rgba(24,32,38,.12);
+    }
     .temperature-label .temperature-badge {
       position: absolute; left: var(--temperature-x); top: var(--temperature-y); display: block;
       box-sizing: border-box; width: var(--temperature-width); height: var(--temperature-height);
@@ -20,9 +25,10 @@ TEMPERATURE_CSS = """
     .temperature-label.is-freezing { --temperature-fill: rgba(219,234,254,.96); --temperature-stroke: #2563a8; --temperature-ink: #173f70; }
     .temperature-label.is-cold { --temperature-fill: rgba(207,250,254,.96); --temperature-stroke: #0e7490; --temperature-ink: #15586b; }
     .temperature-label.is-cool { --temperature-fill: rgba(204,251,241,.96); --temperature-stroke: #0f766e; --temperature-ink: #155e58; }
-    .temperature-label.is-mild { --temperature-fill: rgba(236,246,219,.96); --temperature-stroke: #5b7f35; --temperature-ink: #3f5f26; }
-    .temperature-label.is-warm { --temperature-fill: rgba(254,243,199,.97); --temperature-stroke: #a16207; --temperature-ink: #754806; }
-    .temperature-label.is-hot { --temperature-fill: rgba(255,237,213,.97); --temperature-stroke: #c2410c; --temperature-ink: #8f2f0b; }
+    .temperature-label.is-mild { --temperature-fill: rgba(232,245,218,.96); --temperature-stroke: #568238; --temperature-ink: #385b25; }
+    .temperature-label.is-warm { --temperature-fill: rgba(255,244,189,.97); --temperature-stroke: #b57908; --temperature-ink: #754b05; }
+    .temperature-label.is-hot { --temperature-fill: rgba(255,226,183,.97); --temperature-stroke: #cb5f0a; --temperature-ink: #883b08; }
+    .temperature-label.is-very-hot { --temperature-fill: rgba(255,218,205,.97); --temperature-stroke: #c93624; --temperature-ink: #87251a; }
     .temperature-label.is-extreme { --temperature-fill: rgba(254,226,226,.97); --temperature-stroke: #b91c1c; --temperature-ink: #861818; }
     .temperature-label:hover .temperature-badge { filter: saturate(1.12); }
     .temperature-label:focus-visible .temperature-badge { outline: 2px solid #263f2e; outline-offset: 2px; }
@@ -153,7 +159,10 @@ TEMPERATURE_JS = r"""
           && a.top < b.bottom + gap && a.bottom + gap > b.top;
       }
       function placeTemperatureLabel(pixel, size, occupied, width, height, previous) {
-        const candidates = [[-width / 2, -height / 2]];
+        const candidates = [
+          [6, -height - 5], [-width - 6, -height - 5],
+          [6, 5], [-width - 6, 5]
+        ];
         const order = [...candidates.keys()];
         if (Number.isInteger(previous) && previous >= 0 && previous < candidates.length) {
           order.splice(previous, 1); order.unshift(previous);
@@ -171,10 +180,11 @@ TEMPERATURE_JS = r"""
       function temperatureBand(degrees) {
         if (degrees < 40) return "freezing";
         if (degrees < 55) return "cold";
-        if (degrees < 70) return "cool";
-        if (degrees < 85) return "mild";
-        if (degrees < 95) return "warm";
-        if (degrees < 105) return "hot";
+        if (degrees < 65) return "cool";
+        if (degrees < 75) return "mild";
+        if (degrees < 85) return "warm";
+        if (degrees < 95) return "hot";
+        if (degrees < 105) return "very-hot";
         return "extreme";
       }
       // TEMPERATURE_PLACEMENT_END

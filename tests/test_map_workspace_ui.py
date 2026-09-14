@@ -19,7 +19,7 @@ def run_js(source):
     assert result.returncode == 0, result.stderr
 
 
-def test_temperature_labels_stay_on_coordinate_and_declutter_overlaps():
+def test_temperature_labels_stay_close_to_coordinate_and_declutter_overlaps():
     geometry = TEMPERATURE_JS.split("// TEMPERATURE_PLACEMENT_START:", 1)[1]
     geometry = geometry[geometry.index("function boxesOverlap"):].split("// TEMPERATURE_PLACEMENT_END")[0]
     run_js(geometry + r"""
@@ -27,16 +27,13 @@ def test_temperature_labels_stay_on_coordinate_and_declutter_overlaps():
       const size = {x: 390, y: 560}, pixel = {x: 160, y: 220};
       const first = placeTemperatureLabel(pixel, size, [], 42, 26);
       assert.ok(first);
-      assert.equal(first.dx, -21);
-      assert.equal(first.dy, -13);
-      assert.equal(placeTemperatureLabel(pixel, size, [first.box], 42, 26, first.index), null,
-        'hide an overlap instead of detaching it from its coordinate');
+      assert.equal(first.dx, 6);
+      assert.equal(first.dy, -31);
+      const alternate = placeTemperatureLabel(pixel, size, [first.box], 42, 26, first.index);
+      assert.ok(alternate);
+      assert.ok(!boxesOverlap(first.box, alternate.box));
       const incident = {left: 140, right: 180, top: 200, bottom: 240};
       assert.equal(placeTemperatureLabel(pixel, size, [incident], 42, 26), null);
-      for (const p of [{x:3,y:3},{x:387,y:557},{x:200,y:550}]) {
-        const label=placeTemperatureLabel(p,size,[],42,36);
-        assert.equal(label, null);
-      }
       assert.equal(placeTemperatureLabel(pixel,size,[{left:0,right:390,top:0,bottom:560}],42,26),null);
     """)
 

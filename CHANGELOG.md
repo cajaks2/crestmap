@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.274 - 2026-09-14
+
+- Move temperature chips just beside their road coordinates with a compact
+  matching anchor dot, and split the broad green range so 75–84°F reads amber
+  before progressing through orange and red heat bands.
+
 ### 0.1.273 - 2026-09-14
 
 - Remove temperature connector arrows and shrink readings into compact color
