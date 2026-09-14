@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.273 - 2026-09-14
+
+- Remove temperature connector arrows and shrink readings into compact color
+  chips centered on their exact coordinates; overlapping lower-priority readings
+  are omitted instead of being detached from the road.
+
 ### 0.1.272 - 2026-09-14
 
 - Replace detached temperature numbers with coordinate-anchored, color-banded
