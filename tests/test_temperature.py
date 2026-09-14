@@ -269,7 +269,9 @@ def test_endpoint_and_local_render(tmp_path, monkeypatch, region):
     assert 'return "extreme"' in rendered
     assert "function anchorGeometry" not in rendered
     assert 'class="temperature-anchor"' not in rendered
-    assert 'class="temperature-terrain-symbol"' in rendered
+    assert 'class="temperature-terrain-symbol"' not in rendered
+    assert "const height = 15" in rendered
+    assert "degrees >= 100 ? 28 : 25" in rendered
     assert "previousPlacements.get(key)" in rendered
     assert "temperature-leader" not in rendered
     assert "occupied.push(placement.box)" in rendered

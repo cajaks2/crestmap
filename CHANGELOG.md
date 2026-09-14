@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.277 - 2026-09-14
+
+- Remove the ambiguous up/down terrain triangles from temperature readings and
+  reduce visible chip dimensions by about 20% while retaining their larger
+  invisible interaction target.
+
 ### 0.1.276 - 2026-09-14
 
 - Reduce the visual weight and size of temperature chips, and distribute local
