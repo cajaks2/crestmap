@@ -65,6 +65,8 @@ ROAD_NAMES = {
     "mount_baldy": "Mount Baldy Road",
 }
 ROAD_SAMPLE_INTERVAL_MILES = 2.5
+TERRAIN_HIGH_POINT_COUNT = 3
+TERRAIN_LOW_POINT_COUNT = 2
 
 
 def forest_road_sample_points():
@@ -297,6 +299,25 @@ def parse_estimates(payload, region, now):
         points.append(point)
     if not points:
         raise TemperatureUnavailable()
+    road_points = [point for point in points if point["road"]]
+    terrain_points = [point for point in points if not point["road"]]
+    low_points = sorted(terrain_points, key=lambda point: point["elevation_m"])[
+        :TERRAIN_LOW_POINT_COUNT
+    ]
+    low_ids = {id(point) for point in low_points}
+    high_points = [
+        point for point in sorted(
+            terrain_points, key=lambda point: point["elevation_m"], reverse=True
+        )
+        if id(point) not in low_ids
+    ][:TERRAIN_HIGH_POINT_COUNT]
+    for point in low_points:
+        point["terrain_extreme"] = "low"
+        point["name"] = "Topographic low"
+    for point in high_points:
+        point["terrain_extreme"] = "high"
+        point["name"] = "Topographic high"
+    points = road_points + high_points + low_points
     return {"region": region, "source": "Open-Meteo", "points": points,
             "fetched_at": dt.datetime.fromtimestamp(now, dt.timezone.utc).isoformat()}
 

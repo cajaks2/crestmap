@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.271 - 2026-09-14
+
+- Focus temperature labels on road corridors and retain only a small set of
+  elevation-derived topographic highs and lows; clear incident-marker selection
+  whenever its detail sheet closes.
+
 ### 0.1.270 - 2026-09-14
 
 - Handle Mac trackpad pinch gestures separately from ordinary wheel input so

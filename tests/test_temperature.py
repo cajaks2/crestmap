@@ -105,17 +105,32 @@ def test_coordinates_are_requested_points_and_elevation_is_provider_terrain(regi
                                         ("time", NOW + 901)])
 def test_invalid_values_are_omitted(field, value):
     data = payload()
+    baseline_count = len(weather.parse_estimates(payload(), "forest", NOW)["points"])
     data[0]["current"][field] = value
-    assert len(weather.parse_estimates(data, "forest", NOW)["points"]) == len(data) - 1
+    assert len(weather.parse_estimates(data, "forest", NOW)["points"]) == baseline_count - 1
 
 
 def test_wrong_units_and_missing_elevation_are_not_displayed():
     data = payload()
+    baseline_count = len(weather.parse_estimates(payload(), "forest", NOW)["points"])
     data[0]["current_units"]["temperature_2m"] = "°C"
     data[1]["elevation"] = None
-    assert len(weather.parse_estimates(data, "forest", NOW)["points"]) == len(data) - 2
+    assert len(weather.parse_estimates(data, "forest", NOW)["points"]) == baseline_count - 2
     with pytest.raises(weather.TemperatureUnavailable):
         weather.parse_estimates([], "forest", NOW)
+
+
+@pytest.mark.parametrize("region", ["forest", "malibu"])
+def test_only_topographic_extremes_remain_off_road(region):
+    data = payload(region)
+    for index, row in enumerate(data):
+        row["elevation"] = 100 + index
+    result = weather.parse_estimates(data, region, NOW)
+    terrain = [point for point in result["points"] if not point["road"]]
+    assert len(terrain) == weather.TERRAIN_HIGH_POINT_COUNT + weather.TERRAIN_LOW_POINT_COUNT
+    assert sum(point["terrain_extreme"] == "high" for point in terrain) == weather.TERRAIN_HIGH_POINT_COUNT
+    assert sum(point["terrain_extreme"] == "low" for point in terrain) == weather.TERRAIN_LOW_POINT_COUNT
+    assert {point["name"] for point in terrain} == {"Topographic high", "Topographic low"}
 
 
 def test_fresh_nws_station_observation_is_measured():
@@ -241,7 +256,7 @@ def test_endpoint_and_local_render(tmp_path, monkeypatch, region):
     assert "temperature-label" in rendered
     assert "orderedPoints" in rendered
     assert "displayRank" in rendered
-    assert "map.getZoom() < 11" in rendered
+    assert '!point.road && !point.terrain_extreme' in rendered
     assert "function placeTemperatureLabel" in rendered
     assert "previousPlacements.get(key)" in rendered
     assert "temperature-leader" not in rendered

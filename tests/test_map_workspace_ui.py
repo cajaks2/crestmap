@@ -69,6 +69,7 @@ def test_rendered_scripts_parse_and_sheet_preserves_full_record(region):
     assert 'font: 300 30px/1 -apple-system' in html
     assert 'if (event.target.closest("button")) return;' in html
     assert '#incident-list-close:active, #map-sheet-close:active' in html
+    assert 'new CustomEvent("crestmap:detailclose"' in html
     assert 'function suspendMapGestures()' in html
     assert 'if (paneGestureMapState.dragging) map.dragging.disable();' in html
     assert 'if (previous.touchZoom) map.touchZoom.enable();' in html

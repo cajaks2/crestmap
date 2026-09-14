@@ -201,13 +201,12 @@ TEMPERATURE_JS = r"""
         const width = 42;
         const height = window.matchMedia('(pointer: coarse)').matches ? 36 : 26;
         const activeKeys = new Set();
-        const displayRank = point => point.kind === "observation" ? 3 : point.priority ? 2 : point.road ? 1 : 0;
+        const displayRank = point => point.kind === "observation" ? 4 : point.road ? 3 : point.terrain_extreme ? 2 : 0;
         const orderedPoints = [...points].sort((a, b) => displayRank(b) - displayRank(a));
         for (const point of orderedPoints) {
           const measured = point.kind === "observation";
           if (!fresh(point)) continue;
-          // Keep the overview road-focused; reveal surrounding terrain after zooming in.
-          if (point.kind !== "observation" && !point.priority && !point.road && map.getZoom() < 11) continue;
+          if (point.kind !== "observation" && !point.road && !point.terrain_extreme) continue;
           const latlng = [point.latitude, point.longitude];
           if (!map.getBounds().contains(latlng)) continue;
           const pixel = map.latLngToContainerPoint(latlng);

@@ -219,11 +219,17 @@ MAP_WORKSPACE_JS = r"""
       shell.dataset.mapSheet = "closed";
       shell.dataset.mapList = "closed";
       function setSheet(state) {
-        if (state === "closed" && shell.dataset.mapSheet !== "closed") {
+        const wasOpen = shell.dataset.mapSheet !== "closed";
+        if (state === "closed" && wasOpen) {
           sheet.style.height = `${sheet.getBoundingClientRect().height}px`;
           setTimeout(() => sheet.style.removeProperty("height"), 240);
         }
         shell.dataset.mapSheet = state;
+        if (state === "closed" && wasOpen && selectionKey) {
+          window.dispatchEvent(new CustomEvent("crestmap:detailclose", {detail: {selectionKey}}));
+          selectionKey = null;
+          selection = null;
+        }
       }
       function setList(next) {
         const state = next === true ? "open" : next === false ? "closed" : next;
