@@ -893,6 +893,11 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "preferCanvas: false" in html
     assert "wheelDebounceTime: 15" in html
     assert "wheelPxPerZoomLevel: 12" in html
+    assert "function setupTrackpadPinchZoom()" in html
+    assert 'if (!event.ctrlKey || !event.deltaY) return;' in html
+    assert 'Math.max(0.5, Math.abs(delta) * 0.12)' in html
+    assert 'capture: true, passive: false' in html
+    assert "setupTrackpadPinchZoom();" in html
     assert "markerZoomAnimation: true" in html
     assert 'const compactMapRendering = window.matchMedia("(max-width: 1000px)").matches' in html
     assert "fadeAnimation: !compactMapRendering" in html

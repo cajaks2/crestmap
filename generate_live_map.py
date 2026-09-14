@@ -3490,6 +3490,36 @@ def build_html(
       restoredMapView ? [restoredMapView.latitude, restoredMapView.longitude] : {json.dumps(viewport["center"])},
       restoredMapView ? restoredMapView.zoom : {viewport["zoom"]}
     );
+
+    function setupTrackpadPinchZoom() {{
+      if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+      let accumulatedDelta = 0;
+      let pinchPoint = null;
+      let animationFrame = null;
+
+      mapEl.addEventListener("wheel", (event) => {{
+        // Chromium and Safari expose a Mac trackpad pinch as a ctrl-modified
+        // wheel event. Leaflet 1.9's wheel sigmoid flattens these small deltas.
+        if (!event.ctrlKey || !event.deltaY) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        pauseUserLocationFollowing();
+        accumulatedDelta += event.deltaY;
+        pinchPoint = map.mouseEventToContainerPoint(event);
+        if (animationFrame !== null) return;
+        animationFrame = window.requestAnimationFrame(() => {{
+          const delta = accumulatedDelta;
+          const point = pinchPoint;
+          accumulatedDelta = 0;
+          animationFrame = null;
+          const direction = delta > 0 ? -1 : 1;
+          const zoomAmount = Math.min(2, Math.max(0.5, Math.abs(delta) * 0.12));
+          map.setZoomAround(point, map.getZoom() + direction * zoomAmount);
+        }});
+      }}, {{ capture: true, passive: false }});
+    }}
+
+    setupTrackpadPinchZoom();
     const offlineBasemapPane = map.createPane("offlineBasemap");
     offlineBasemapPane.style.zIndex = "175";
     offlineBasemapPane.style.pointerEvents = "none";
