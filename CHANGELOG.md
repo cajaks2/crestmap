@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.281 - 2026-09-14
+
+- Suspend map drag and pinch handling while incident lists and detail sheets
+  animate open, preventing a fast touch from retaining control of the map beneath
+  the newly arrived pane.
+
 ### 0.1.280 - 2026-09-14
 
 - Limit station calibration to 3.5 miles and exclude modeled points whose

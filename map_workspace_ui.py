@@ -220,6 +220,7 @@ MAP_WORKSPACE_JS = r"""
       shell.dataset.mapList = "closed";
       function setSheet(state) {
         const wasOpen = shell.dataset.mapSheet !== "closed";
+        if (state !== "closed" && shell.dataset.mapSheet !== state) guardMapDuringPaneTransition();
         if (state === "closed" && wasOpen) {
           sheet.style.height = `${sheet.getBoundingClientRect().height}px`;
           setTimeout(() => sheet.style.removeProperty("height"), 240);
@@ -233,6 +234,7 @@ MAP_WORKSPACE_JS = r"""
       }
       function setList(next) {
         const state = next === true ? "open" : next === false ? "closed" : next;
+        if (state !== "closed" && shell.dataset.mapList !== state) guardMapDuringPaneTransition();
         shell.dataset.mapList = state;
         const visible = state !== "closed";
         listToggle.setAttribute("aria-expanded", String(visible));
@@ -340,6 +342,7 @@ MAP_WORKSPACE_JS = r"""
       listToggle.addEventListener("pointerdown", event => event.preventDefault());
       listToggle.addEventListener("click", () => setList(shell.dataset.mapList === "closed" ? "open" : "closed"));
       let paneGestureMapState = null;
+      let paneTransitionTimer = null;
       function suspendMapGestures() {
         if (paneGestureMapState) return;
         paneGestureMapState = {
@@ -355,6 +358,16 @@ MAP_WORKSPACE_JS = r"""
         paneGestureMapState = null;
         if (previous.dragging) map.dragging.enable();
         if (previous.touchZoom) map.touchZoom.enable();
+      }
+      function guardMapDuringPaneTransition() {
+        if (!mobileViewport.matches) return;
+        suspendMapGestures();
+        if (paneTransitionTimer !== null) window.clearTimeout(paneTransitionTimer);
+        paneTransitionTimer = window.setTimeout(() => {
+          paneTransitionTimer = null;
+          if (sheet.classList.contains("is-dragging") || listShell.classList.contains("is-dragging")) return;
+          restoreMapGestures();
+        }, 260);
       }
       function bindListDrag(dragSurface) {
         let start = null;
