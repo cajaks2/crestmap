@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.282 - 2026-09-14
+
+- Make MacBook trackpad pinch zoom respond at a button-like speed in Chromium
+  and support Safari's native pinch gesture events without changing touch zoom.
+
 ### 0.1.281 - 2026-09-14
 
 - Suspend map drag and pinch handling while incident lists and detail sheets

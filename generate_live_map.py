@@ -3496,11 +3496,20 @@ def build_html(
       let accumulatedDelta = 0;
       let pinchPoint = null;
       let animationFrame = null;
+      let nativeGestureStartZoom = null;
+      let nativeGesturePoint = null;
+
+      function gesturePoint(event) {{
+        if (Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {{
+          return map.mouseEventToContainerPoint(event);
+        }}
+        return map.getSize().divideBy(2);
+      }}
 
       mapEl.addEventListener("wheel", (event) => {{
-        // Chromium and Safari expose a Mac trackpad pinch as a ctrl-modified
-        // wheel event. Leaflet 1.9's wheel sigmoid flattens these small deltas.
-        if (!event.ctrlKey || !event.deltaY) return;
+        // Chromium exposes a Mac trackpad pinch as a ctrl-modified wheel event.
+        // Leaflet 1.9's wheel sigmoid flattens these small deltas.
+        if (nativeGestureStartZoom !== null || !event.ctrlKey || !event.deltaY) return;
         event.preventDefault();
         event.stopImmediatePropagation();
         pauseUserLocationFollowing();
@@ -3513,10 +3522,40 @@ def build_html(
           accumulatedDelta = 0;
           animationFrame = null;
           const direction = delta > 0 ? -1 : 1;
-          const zoomAmount = Math.min(2, Math.max(0.5, Math.abs(delta) * 0.12));
+          const zoomAmount = Math.min(3, Math.max(0.75, Math.abs(delta) * 0.35));
           map.setZoomAround(point, map.getZoom() + direction * zoomAmount);
         }});
       }}, {{ capture: true, passive: false }});
+
+      // Safari sends trackpad pinch through WebKit GestureEvent. Its scale is
+      // absolute from gesturestart, so derive zoom from the starting view to
+      // avoid slow, accumulated animation steps.
+      mapEl.addEventListener("gesturestart", (event) => {{
+        if (!Number.isFinite(event.scale) || event.scale <= 0) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        pauseUserLocationFollowing();
+        nativeGestureStartZoom = map.getZoom();
+        nativeGesturePoint = gesturePoint(event);
+      }}, {{ capture: true, passive: false }});
+
+      mapEl.addEventListener("gesturechange", (event) => {{
+        if (nativeGestureStartZoom === null || !Number.isFinite(event.scale) || event.scale <= 0) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const targetZoom = nativeGestureStartZoom + Math.log2(event.scale) * 3.5;
+        map.setZoomAround(nativeGesturePoint, targetZoom);
+      }}, {{ capture: true, passive: false }});
+
+      function finishNativeGesture(event) {{
+        if (nativeGestureStartZoom === null) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        nativeGestureStartZoom = null;
+        nativeGesturePoint = null;
+      }}
+      mapEl.addEventListener("gestureend", finishNativeGesture, {{ capture: true, passive: false }});
+      mapEl.addEventListener("gesturecancel", finishNativeGesture, {{ capture: true, passive: false }});
     }}
 
     setupTrackpadPinchZoom();

@@ -896,8 +896,11 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "wheelDebounceTime: 15" in html
     assert "wheelPxPerZoomLevel: 12" in html
     assert "function setupTrackpadPinchZoom()" in html
-    assert 'if (!event.ctrlKey || !event.deltaY) return;' in html
-    assert 'Math.max(0.5, Math.abs(delta) * 0.12)' in html
+    assert 'if (nativeGestureStartZoom !== null || !event.ctrlKey || !event.deltaY) return;' in html
+    assert 'Math.max(0.75, Math.abs(delta) * 0.35)' in html
+    assert 'mapEl.addEventListener("gesturestart"' in html
+    assert 'mapEl.addEventListener("gesturechange"' in html
+    assert "Math.log2(event.scale) * 3.5" in html
     assert 'capture: true, passive: false' in html
     assert "setupTrackpadPinchZoom();" in html
     assert "markerZoomAnimation: true" in html
