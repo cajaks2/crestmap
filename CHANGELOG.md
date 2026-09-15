@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.283 - 2026-09-14
+
+- Fix incident search results so nonmatching cards are actually removed from the
+  visible list instead of being restored by the incident card display style.
+
 ### 0.1.282 - 2026-09-14
 
 - Make MacBook trackpad pinch zoom respond at a button-like speed in Chromium

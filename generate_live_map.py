@@ -2159,6 +2159,9 @@ def build_html(
       background: #ffffff;
       cursor: pointer;
     }}
+    .incident[hidden] {{
+      display: none !important;
+    }}
     .incident.is-wildweb-aging {{
       transition: filter 180ms ease, background-color 180ms ease;
     }}
