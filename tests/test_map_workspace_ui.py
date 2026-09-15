@@ -64,6 +64,9 @@ def test_rendered_scripts_parse_and_sheet_preserves_full_record(region):
     assert 'guardMapDuringPaneTransition();' in html
     assert '}, 260);' in html
     assert 'new CustomEvent("crestmap:detailclose"' in html
+    assert 'map.on("click", dismissPaneFromMap)' in html
+    assert 'if (!mobileViewport.matches) return;' in html
+    assert 'if (shell.dataset.mapSheet !== "closed")' in html
     assert 'function suspendMapGestures()' in html
     assert 'if (paneGestureMapState.dragging) map.dragging.disable();' in html
     assert 'if (previous.touchZoom) map.touchZoom.enable();' in html

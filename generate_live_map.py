@@ -5569,18 +5569,22 @@ def build_html(
     }}
 
     window.addEventListener("crestmap:detailclose", () => {{
-      if (!selectedIncidentKey) return;
-      selectedIncidentKey = null;
-      revealedIncidentKey = null;
-      delete detailsPanel.dataset.selectedIncidentKey;
-      document.querySelectorAll(".incident").forEach(button => button.setAttribute("aria-current", "false"));
-      markers.forEach((marker, eventKey) => {{
-        const incident = incidents.find(item => item.event_key === eventKey);
-        if (!incident) return;
-        marker.setIcon(markerIcon(incident));
-        marker.setZIndexOffset(0);
-        if (!incidentLayerVisible) marker.remove();
-      }});
+      const hadSelection = Boolean(selectedIncidentKey || selectedCamera);
+      if (selectedCamera) clearCameraSelection();
+      if (selectedIncidentKey) {{
+        selectedIncidentKey = null;
+        revealedIncidentKey = null;
+        delete detailsPanel.dataset.selectedIncidentKey;
+        document.querySelectorAll(".incident").forEach(button => button.setAttribute("aria-current", "false"));
+        markers.forEach((marker, eventKey) => {{
+          const incident = incidents.find(item => item.event_key === eventKey);
+          if (!incident) return;
+          marker.setIcon(markerIcon(incident));
+          marker.setZIndexOffset(0);
+          if (!incidentLayerVisible) marker.remove();
+        }});
+      }}
+      if (!hadSelection) return;
       if (window.history?.replaceState) {{
         window.history.replaceState({{region: currentRegion}}, "", defaultViewUrl());
       }}

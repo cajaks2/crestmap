@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.284 - 2026-09-14
+
+- Dismiss an open mobile incident list, incident detail, or camera detail pane
+  when the user taps empty map space without dragging, and clear camera selection
+  consistently when its detail pane closes.
+
 ### 0.1.283 - 2026-09-14
 
 - Fix incident search results so nonmatching cards are actually removed from the

@@ -301,6 +301,17 @@ MAP_WORKSPACE_JS = r"""
           else listToggle.focus({preventScroll: true});
         }
       }
+      function dismissPaneFromMap() {
+        if (!mobileViewport.matches) return;
+        if (shell.dataset.mapSheet !== "closed") {
+          closeSheet();
+          return;
+        }
+        if (shell.dataset.mapList !== "closed") setList(false);
+      }
+      // Leaflet emits click only when the pointer did not drag, so ordinary map
+      // panning keeps the pane while an intentional background tap dismisses it.
+      map.on("click", dismissPaneFromMap);
       function backToResults() {
         const selected = selectionKey && document.querySelector(`.incident[data-event-key="${CSS.escape(selectionKey)}"]`);
         setSheet("closed");
