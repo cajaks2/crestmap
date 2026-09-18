@@ -2081,7 +2081,7 @@ def build_html(
     }}
     #scroll-incidents,
     #scroll-incidents-top {{
-      display: none !important;
+      display: none;
       position: absolute;
       left: 50%;
       z-index: 3;
@@ -4696,8 +4696,13 @@ def build_html(
       }}
       const hasMoreAbove = list.scrollTop > 3;
       const hasMoreBelow = list.scrollTop + list.clientHeight < list.scrollHeight - 3;
-      const thirdIncident = list.querySelectorAll(".incident")[2];
+      const visibleIncidents = [...list.querySelectorAll(".incident")].filter((button) => !button.hidden);
+      const thirdIncident = visibleIncidents[2];
       const showScrollToTop = Boolean(thirdIncident && list.scrollTop >= thirdIncident.offsetTop - 3);
+      const listTop = list.offsetTop;
+      const listBottom = Math.max(0, listShell.clientHeight - listTop - list.clientHeight);
+      if (scrollIncidentsTopButton) scrollIncidentsTopButton.style.top = `${{listTop + 7}}px`;
+      if (scrollIncidentsButton) scrollIncidentsButton.style.bottom = `${{listBottom + 7}}px`;
       listShell.classList.toggle("has-more-above", hasMoreAbove);
       listShell.classList.toggle("has-more-below", hasMoreBelow);
       listShell.classList.toggle("show-scroll-to-top", showScrollToTop);

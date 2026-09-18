@@ -78,7 +78,7 @@ def test_rendered_scripts_parse_and_sheet_preserves_full_record(region):
     assert 'id="mobile-connection-status" data-state="online"' in html
     assert 'z-index: 700; font-size: 12px; transition: opacity 160ms ease' in html
     assert 'class="map-activity-dot"' in html
-    assert '#scroll-incidents, #scroll-incidents-top { display: none !important; }' in html
+    assert '#scroll-incidents, #scroll-incidents-top { z-index: 4; width: 44px; height: 36px; }' in html
     assert 'start.state === "expanded" ? 0 : -90' in html
     assert 'height: calc(100% - var(--map-header-height, 170px))' in html
     assert 'shell.getBoundingClientRect().height - headerHeight' in html

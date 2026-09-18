@@ -77,7 +77,7 @@ MAP_WORKSPACE_CSS = """
       #incident-list-close { position: absolute; top: 3px; right: 6px; z-index: 2; width: 44px; height: 44px;
         padding: 0; border: 0; background: transparent; color: #31523e; font: 20px/1 sans-serif; cursor: pointer; }
       #incident-list { flex: 1; min-height: 0; height: auto; }
-      #scroll-incidents, #scroll-incidents-top { display: none !important; }
+      #scroll-incidents, #scroll-incidents-top { z-index: 4; width: 44px; height: 36px; }
       #incident-search-shell { padding-top: 3px; }
       .mobile-map-toolbar { display: flex; position: absolute; left: 50%; bottom: max(10px, env(safe-area-inset-bottom));
         align-items: center; width: max-content; max-width: calc(100% - 24px); transform: translateX(-50%);

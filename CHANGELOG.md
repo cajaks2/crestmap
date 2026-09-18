@@ -11,6 +11,10 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.285 - 2026-09-17
+
+- Restore the incident list up/down controls on desktop and mobile, align them to the scrollable list, and base the up control on visible incidents after filtering.
+
 ### 0.1.284 - 2026-09-14
 
 - Dismiss an open mobile incident list, incident detail, or camera detail pane
