@@ -694,6 +694,10 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "ensureCurrentRegionUrl();" in html
     assert "function updateIncidentUrl" in html
     assert "const linkedIncident = incidentFromUrl();" in html
+    assert "const selectedIncident = linkedIncident;" in html
+    assert "preservedIncident" not in html
+    assert "mobileViewport.matches ? null : incidents[0]" not in html
+    assert '!new URLSearchParams(window.location.search).has("incident")' in html
     assert "revealList: Boolean(linkedIncident)" in html
     assert "updateUrl: options.updateUrl !== false" in html
     assert "${escapeHtml(formatIncidentWhen(incident))}" in html

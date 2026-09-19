@@ -5169,7 +5169,7 @@ def build_html(
         if (!cameraLayerVisible) {{
           clearCameraSelection();
           clearCameraMarkers();
-          const incident = incidents.find((item) => item.event_key === selectedIncidentKey) || incidents[0];
+          const incident = incidents.find((item) => item.event_key === selectedIncidentKey);
           if (incident) selectIncident(incident, {{ pan: false }});
           else showDefaultView();
         }} else if (cameras.length) {{
@@ -5595,6 +5595,14 @@ def build_html(
       }}
     }});
 
+    window.addEventListener("pageshow", (event) => {{
+      if (event.persisted
+          && selectedIncidentKey
+          && !new URLSearchParams(window.location.search).has("incident")) {{
+        showDefaultView();
+      }}
+    }});
+
     detailsPanel.addEventListener("click", async (event) => {{
       const defaultButton = event.target.closest("[data-default-view]");
       if (defaultButton) {{
@@ -5846,10 +5854,9 @@ def build_html(
         selectCamera(linkedCamera, {{ updateUrl: false, pan: !options.preserveViewport, openSheet: !options.preserveViewport }});
         return;
       }}
-      const preservedIncident = selectedIncidentKey
-        ? incidents.find((incident) => incident.event_key === selectedIncidentKey)
-        : null;
-      const selectedIncident = linkedIncident || preservedIncident || (mobileViewport.matches ? null : incidents[0]);
+      // The URL is the source of truth. A clean map URL must not revive an
+      // in-memory selection after a data refresh or browser page restoration.
+      const selectedIncident = linkedIncident;
       if (!selectedIncident) {{
         selectedIncidentKey = null;
         detailsPanel.innerHTML = '<div class="empty">Select an incident to view details.</div>';

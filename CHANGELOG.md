@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.287 - 2026-09-19
+
+- Make the incident URL the authoritative selection state so clean map URLs do
+  not reopen a previous incident after refresh or browser page restoration.
+
 ### 0.1.286 - 2026-09-18
 
 - Improve Summary on mobile with searchable road, type, status, and map-pin
