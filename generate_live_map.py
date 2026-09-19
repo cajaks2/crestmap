@@ -6074,8 +6074,33 @@ def incident_matches_type_filter(incident, selected_type):
 
 
 def filtered_summary_incidents(incidents, filters):
-    selected_type = (filters or {}).get("type") or "all"
-    return [incident for incident in incidents if incident_matches_type_filter(incident, selected_type)]
+    filters = filters or {}
+    query = (filters.get("q") or "").strip().lower()
+    road = filters.get("road") or "all"
+    selected_type = filters.get("type") or "all"
+    status = filters.get("status") or "all"
+    mapped = filters.get("mapped") or "all"
+    filtered = []
+    for incident in incidents:
+        haystack = " ".join(
+            str(incident.get(field) or "")
+            for field in ("incident_no", "type", "location", "location_desc", "area", "incident_time", "source")
+        ).lower()
+        has_coords = incident.get("latitude") is not None and incident.get("longitude") is not None
+        if query and query not in haystack:
+            continue
+        if road != "all" and slugify_filter(incident_road(incident)) != road:
+            continue
+        if not incident_matches_type_filter(incident, selected_type):
+            continue
+        if status != "all" and (incident.get("status") or "") != status:
+            continue
+        if mapped == "mapped" and not has_coords:
+            continue
+        if mapped == "unpinned" and has_coords:
+            continue
+        filtered.append(incident)
+    return filtered
 
 
 def summary_type_options(incidents):
@@ -6170,6 +6195,24 @@ def report_rows(counts, limit=5, compact=False):
     )
 
 
+def ranked_report_rows(counts, limit=6):
+    """Render explicit labels and counts that remain readable on narrow screens."""
+    if not counts:
+        return '<div class="empty-report">No incidents match these filters.</div>'
+    visible_counts = counts if limit is None else counts[:limit]
+    max_count = max(count for _label, count in visible_counts) or 1
+    rows = []
+    for label, count in visible_counts:
+        width = 0 if count == 0 else max(4, round(count / max_count * 100))
+        rows.append(
+            '<div class="ranked-row"><div class="ranked-copy"><span>{}</span><strong>{}</strong></div>'
+            '<div class="ranked-track" aria-hidden="true"><i style="width:{}%"></i></div></div>'.format(
+                html.escape(label), count, width
+            )
+        )
+    return '<div class="ranked-list">' + "".join(rows) + "</div>"
+
+
 def incident_day_key(incident):
     date_text = incident.get("incident_date") or (incident.get("first_seen") or "")[:10]
     if not date_text:
@@ -6214,6 +6257,15 @@ def daily_window_dates(generated_at, hours):
 
 def daily_label_for_date(date_value):
     return f"{date_value.strftime('%a')}, {date_value.strftime('%b')} {date_value.day}"
+
+
+def report_updated_label(generated_at):
+    try:
+        value = dt.datetime.fromisoformat(generated_at)
+    except (TypeError, ValueError):
+        return str(generated_at or "Unknown")
+    hour = value.strftime("%I").lstrip("0") or "0"
+    return f"{value.strftime('%b')} {value.day}, {hour}:{value.strftime('%M %p')}"
 
 
 def daily_incident_counts(incidents, generated_at=None, hours=None):
@@ -6693,6 +6745,38 @@ def report_shell(
       gap: 9px;
       margin-top: 10px;
     }}
+    .summary-filter-panel {{
+      margin-bottom: 14px;
+      padding: 12px;
+      border: 1px solid #d8ddd2;
+      border-radius: 10px;
+      background: #ffffff;
+    }}
+    .summary-filter-panel .search-box {{
+      box-sizing: border-box;
+      margin-top: 0;
+    }}
+    .filter-field {{
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+      color: #58645d;
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: .035em;
+      text-transform: uppercase;
+    }}
+    .filter-field .filter {{
+      width: 100%;
+      min-width: 0;
+      text-transform: none;
+      letter-spacing: 0;
+    }}
+    .summary-result-count {{
+      margin-top: 9px;
+      color: #405047;
+      font-weight: 750;
+    }}
     .filter {{
       min-height: 40px;
       padding: 9px 10px;
@@ -6729,6 +6813,7 @@ def report_shell(
       background: #277447;
     }}
     .result {{
+      display: block;
       padding: 13px 0;
       border-bottom: 1px solid #d8ddd2;
     }}
@@ -6787,6 +6872,74 @@ def report_shell(
       font-weight: 800;
       line-height: 1.35;
       text-transform: uppercase;
+    }}
+    .ranked-list {{
+      display: grid;
+      gap: 10px;
+    }}
+    .ranked-row {{
+      min-width: 0;
+    }}
+    .ranked-copy {{
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+      color: #35453b;
+      font-size: 13px;
+      line-height: 1.25;
+    }}
+    .ranked-copy span {{
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }}
+    .ranked-copy strong {{
+      flex: 0 0 auto;
+      color: #182026;
+      font-size: 13px;
+    }}
+    .ranked-track {{
+      height: 6px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e5eae3;
+    }}
+    .ranked-track i {{
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: #3f8558;
+    }}
+    .summary-section-note {{
+      margin: -4px 0 10px;
+      color: #68736c;
+      font-size: 11px;
+      line-height: 1.35;
+    }}
+    .result-link {{
+      color: inherit;
+      text-decoration: none;
+    }}
+    .result-link:hover strong,
+    .result-link:focus strong {{
+      color: #1f6840;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }}
+    @media (max-width: 480px) {{
+      main {{ padding: 10px 10px 26px; }}
+      .summary-filter-panel {{ margin: 0 -1px 12px; padding: 10px; }}
+      .filter-grid-summary {{ gap: 7px; }}
+      .filter-field {{ font-size: 9px; }}
+      .filter {{ padding: 8px 7px; font-size: 12px; }}
+      .filter-actions {{ margin-top: 8px; }}
+      .filter-actions button, .filter-actions a {{ flex: 1 1 0; }}
+      .kpi {{ min-height: 62px; padding: 10px; }}
+      .kpi strong {{ font-size: 23px; }}
+      .kpi span {{ font-size: 11px; }}
+      .section {{ margin-top: 12px; padding-top: 12px; }}
+      h2 {{ font-size: 17px; }}
     }}
     @media (min-width: 760px) {{
       #report-app {{
@@ -6946,24 +7099,44 @@ def build_summary_html(
     region = normalize_region(region)
     label = region_label(region)
     filters = filters or {}
+    query = filters.get("q") or ""
+    selected_road = filters.get("road") or "all"
     selected_type = filters.get("type") or "all"
+    selected_status = filters.get("status") or "all"
+    selected_mapped = filters.get("mapped") or "all"
     filtered_incidents = filtered_summary_incidents(incidents, filters)
-    active_filter_params = {} if selected_type == "all" else {"type": selected_type}
+    active_filter_params = {
+        key: value for key, value in {
+            "q": query, "road": selected_road, "type": selected_type,
+            "status": selected_status, "mapped": selected_mapped,
+        }.items() if value and value != "all"
+    }
     status = {**incident_status(filtered_incidents, hours), "region": region}
     active_count = status["active_count"]
     mapped_count = status["mapped_count"]
     cleared_count = status["cleared_count"] + status["archived_count"]
-    road_rows = report_rows(count_by(filtered_incidents, incident_road))
-    type_rows = report_rows(count_by(filtered_incidents, lambda incident: incident.get("type") or "Unknown"))
-    day_rows = report_rows(daily_incident_counts(filtered_incidents, generated_at, hours), limit=None, compact=True)
-    time_rows = report_rows(time_bucket_counts(filtered_incidents), limit=None)
+    road_rows = ranked_report_rows(count_by(filtered_incidents, incident_road), limit=7)
+    type_rows = ranked_report_rows(count_by(filtered_incidents, lambda incident: incident.get("type") or "Unknown"), limit=7)
+    day_rows = ranked_report_rows(daily_incident_counts(filtered_incidents, generated_at, hours), limit=None)
+    time_rows = ranked_report_rows(time_bucket_counts(filtered_incidents), limit=None)
+    road_options = [("all", "All roads")] + [
+        (slugify_filter(road_label), road_label)
+        for road_label, _count in count_by(incidents, incident_road)
+    ]
+    status_options = [
+        ("all", "All statuses"), ("active", "Active CHP"),
+        ("reported", "WildWeb reported"), ("cleared", "Cleared"),
+        ("archived", "Archived"),
+    ]
+    mapped_options = [("all", "Pins + unpinned"), ("mapped", "Map pins only"), ("unpinned", "Unpinned only")]
     recent = sorted(
         filtered_incidents,
         key=incident_recency,
         reverse=True,
     )[:5]
     recent_html = "".join(
-        '<div class="result"><span class="status-pill {}">{}</span><span class="source-pill">{}</span><strong>{}</strong>{}<span>{} · #{}</span></div>'.format(
+        '<a class="result result-link" href="{}"><span class="status-pill {}">{}</span><span class="source-pill">{}</span><strong>{}</strong>{}<span>{} · #{} · Show on map</span></a>'.format(
+            html.escape(href_with_query(app_path(base_path, "/"), hours=f"{hours:g}", region=region, incident=incident.get("event_key") or "")),
             incident_status_class(incident),
             html.escape(incident_status_label(incident)),
             html.escape(incident_source_label(incident)),
@@ -6976,51 +7149,60 @@ def build_summary_html(
     ) or '<div class="empty-report">No recent incidents in this window.</div>'
     filter_summary = (
         f"{len(filtered_incidents)} of {len(incidents)} incidents"
-        if selected_type != "all"
+        if active_filter_params
         else f"{len(incidents)} incidents"
     )
     reset_href = href_with_query(app_path(base_path, "/summary"), hours=f"{hours:g}", region=region)
     body = f"""
-      <form method="get" action="{html.escape(app_path(base_path, "/summary"))}" aria-label="Summary filters">
+      <form class="summary-filter-panel" method="get" action="{html.escape(app_path(base_path, "/summary"))}" aria-label="Search and filter summary">
         <input type="hidden" name="hours" value="{hours:g}">
         <input type="hidden" name="region" value="{html.escape(region)}">
+        <input class="search-box" type="search" name="q" value="{html.escape(query)}" placeholder="Search road, place, type, area, or incident #" aria-label="Search summary incidents">
         <div class="filter-grid filter-grid-summary">
-          <select class="filter" name="type" aria-label="Incident type filter">{option_tags(summary_type_options(incidents), selected_type)}</select>
+          <label class="filter-field"><span>Road</span><select class="filter" name="road">{option_tags(road_options, selected_road)}</select></label>
+          <label class="filter-field"><span>Type</span><select class="filter" name="type">{option_tags(summary_type_options(incidents), selected_type)}</select></label>
+          <label class="filter-field"><span>Status</span><select class="filter" name="status">{option_tags(status_options, selected_status)}</select></label>
+          <label class="filter-field"><span>Map visibility</span><select class="filter" name="mapped">{option_tags(mapped_options, selected_mapped)}</select></label>
         </div>
         <div class="filter-actions">
           <button type="submit">Apply filter</button>
           <a href="{html.escape(reset_href)}">Reset</a>
         </div>
-        <div class="meta">{html.escape(filter_summary)} shown in the selected window.</div>
+        <div class="meta summary-result-count">{html.escape(filter_summary)} · last {hours:g} hours</div>
       </form>
       <section class="kpi-grid" aria-label="Incident summary">
-        <div class="kpi"><strong>{status["total_count"]}</strong><span>Incidents in window</span></div>
-        <div class="kpi"><strong>{active_count}</strong><span>Active CHP incidents</span></div>
-        <div class="kpi"><strong>{mapped_count}</strong><span>Mapped incidents</span></div>
-        <div class="kpi"><strong>{cleared_count}</strong><span>Cleared or archived</span></div>
+        <div class="kpi"><strong>{status["total_count"]}</strong><span>Matching incidents</span></div>
+        <div class="kpi"><strong>{active_count}</strong><span>Active CHP matches</span></div>
+        <div class="kpi"><strong>{mapped_count}</strong><span>Matches with map pins</span></div>
+        <div class="kpi"><strong>{cleared_count}</strong><span>Closed or archived matches</span></div>
       </section>
       <section class="section">
         <h2>Busiest Roads</h2>
+        <p class="summary-section-note">Top roads among the matching incidents.</p>
         {road_rows}
       </section>
       <section class="section">
         <h2>Incident Types</h2>
+        <p class="summary-section-note">Most common report types among these results.</p>
         {type_rows}
       </section>
       <section class="section">
         <h2>Incidents by Day</h2>
+        <p class="summary-section-note">Includes zero-count days in the selected window.</p>
         {day_rows}
       </section>
       <section class="section">
         <h2>Time of Day</h2>
+        <p class="summary-section-note">Based on the incident time reported by the source.</p>
         {time_rows}
       </section>
       <section class="section">
-        <h2>Recent Changes</h2>
+        <h2>Latest Matching Incidents</h2>
+        <p class="summary-section-note">Select an incident to open it on the map.</p>
         {recent_html}
       </section>
     """
-    subtitle = f"{label} incident activity · updated {generated_at}"
+    subtitle = f"{label} incident activity · updated {report_updated_label(generated_at)}"
     return report_shell(
         "Summary",
         subtitle,
@@ -7117,7 +7299,7 @@ def build_history_html(
         {result_rows}
       </section>
     """
-    subtitle = f"Search stored {label.lower()} incidents · updated {generated_at}"
+    subtitle = f"Search stored {label.lower()} incidents · updated {report_updated_label(generated_at)}"
     return report_shell(
         "History",
         subtitle,
@@ -7199,7 +7381,7 @@ def build_about_html(
         <div class="result"><strong>Project README</strong><span><a href="https://github.com/cajaks2/crestmap#readme" rel="noopener">github.com/cajaks2/crestmap</a></span></div>
       </section>
     """
-    subtitle = f"{label} source, update cadence, and project context · updated {generated_at}"
+    subtitle = f"{label} source, update cadence, and project context · updated {report_updated_label(generated_at)}"
     return report_shell(
         "About",
         subtitle,

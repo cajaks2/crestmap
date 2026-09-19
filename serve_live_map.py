@@ -890,6 +890,9 @@ class LiveMapHandler(BaseHTTPRequestHandler):
             "mapped": (params.get("mapped") or ["all"])[0],
         }
 
+    def summary_filters(self):
+        return self.history_filters()
+
     def region_statuses(self, hours, conn=None):
         statuses = {}
         for metric_region in METRIC_REGIONS:
@@ -1334,6 +1337,7 @@ class LiveMapHandler(BaseHTTPRequestHandler):
                     google_analytics_id=self.google_analytics_id,
                     region=region,
                     region_statuses=region_statuses,
+                    filters=self.summary_filters(),
                 ).encode("utf-8")
             elif path in history_paths:
                 body = build_history_html(

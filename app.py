@@ -229,7 +229,11 @@ def history_filters(request):
 def summary_filters(request):
     params = _query(request)
     return {
+        "q": (params.get("q") or [""])[0],
+        "road": (params.get("road") or ["all"])[0],
         "type": (params.get("type") or ["all"])[0],
+        "status": (params.get("status") or ["all"])[0],
+        "mapped": (params.get("mapped") or ["all"])[0],
     }
 
 

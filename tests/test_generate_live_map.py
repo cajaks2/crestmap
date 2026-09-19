@@ -961,18 +961,23 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "Incident Types" in summary_html
     assert "Incidents by Day" in summary_html
     assert "Time of Day" in summary_html
-    assert "Fri, May 29: 0" in summary_html
-    assert "Sat, May 30: 0" in summary_html
+    assert "Fri, May 29</span><strong>0" in summary_html
+    assert "Sat, May 30</span><strong>0" in summary_html
     assert "Sun, May 31" in summary_html
-    assert 'class="bar-column is-zero"' in summary_html
     assert "Morning" in summary_html
-    assert "2</strong><span>Incidents in window" in summary_html
-    assert 'class="bar-chart"' in summary_html
-    assert 'class="bar-chart bar-chart-compact"' in summary_html
-    assert 'class="bar-column"' in summary_html
-    assert "bar-row" not in summary_html
-    assert '<select class="filter" name="type" aria-label="Incident type filter">' in summary_html
+    assert "2</strong><span>Matching incidents" in summary_html
+    assert 'class="summary-filter-panel"' in summary_html
+    assert 'class="ranked-list"' in summary_html
+    assert 'class="ranked-row"' in summary_html
+    assert 'class="bar-column"' not in summary_html
+    assert 'placeholder="Search road, place, type, area, or incident #"' in summary_html
+    assert '<span>Road</span><select class="filter" name="road">' in summary_html
+    assert '<span>Type</span><select class="filter" name="type">' in summary_html
+    assert '<span>Status</span><select class="filter" name="status">' in summary_html
+    assert '<span>Map visibility</span><select class="filter" name="mapped">' in summary_html
     assert '<option value="family:collision">Traffic collisions / accidents</option>' in summary_html
+    assert "Latest Matching Incidents" in summary_html
+    assert "Show on map" in summary_html
     assert '<nav class="range-tabs" aria-label="History range">' in summary_html
     assert '<a class="range-tab is-active" href="?hours=72&amp;region=forest" aria-current="page">72h</a>' in summary_html
     assert '<nav class="view-tabs" aria-label="View navigation">' not in summary_html
@@ -987,11 +992,25 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
         72,
         filters={"type": "family:collision"},
     )
-    assert "1 of 2 incidents shown" in filtered_summary_html
+    assert "1 of 2 incidents" in filtered_summary_html
     assert '<option value="family:collision" selected>Traffic collisions / accidents</option>' in filtered_summary_html
     assert "Trfc Collision-Unkn Inj" in filtered_summary_html
     assert "<strong>Traffic Hazard</strong>" not in filtered_summary_html
     assert '<a class="range-tab is-active" href="?hours=72&amp;region=forest&amp;type=family%3Acollision" aria-current="page">72h</a>' in filtered_summary_html
+
+    searched_summary_html = build_summary_html(
+        incidents,
+        "2026-05-31T08:05:00-07:00",
+        72,
+        filters={"q": "Angeles", "status": "active", "mapped": "mapped"},
+    )
+    assert "1 of 2 incidents" in searched_summary_html
+    assert 'value="Angeles"' in searched_summary_html
+    assert '<option value="active" selected>Active CHP</option>' in searched_summary_html
+    assert '<option value="mapped" selected>Map pins only</option>' in searched_summary_html
+    assert "Traffic &lt;Hazard&gt;" in searched_summary_html
+    assert "<strong>Disabled Vehicle</strong>" not in searched_summary_html
+    assert "q=Angeles&amp;status=active&amp;mapped=mapped" in searched_summary_html
 
     history_html = build_history_html(incidents, "2026-05-31T08:05:00-07:00", 72)
     assert "History - Crestmap Forest Incidents" in history_html

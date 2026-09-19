@@ -11,6 +11,13 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.286 - 2026-09-18
+
+- Improve Summary on mobile with searchable road, type, status, and map-pin
+  filters, explicit labeled counts, clearer matching totals, and map links for
+  recent results.
+- Replace raw report timestamps with compact local date and time labels.
+
 ### 0.1.285 - 2026-09-17
 
 - Restore the incident list up/down controls on desktop and mobile, align them to the scrollable list, and base the up control on visible incidents after filtering.
