@@ -598,6 +598,10 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert 'id="incident-list-handle"' in html
     assert 'placeholder="Road, place, type, or incident #"' in html
     assert "function applyIncidentSearch()" in html
+    assert "function incidentMatchesSearch(incident, query)" in html
+    assert "function syncIncidentMarkersToSearch" in html
+    assert "syncIncidentMarkersToSearch(query);" in html
+    assert "matchesSearch && layerAllowsMarker" in html
     assert ".incident[hidden] {\n      display: none !important;" in html
     assert 'bindListDrag(listHandle)' in html
     assert "flex-basis: clamp(150px, 23svh, 200px)" in html

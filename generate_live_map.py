@@ -3819,10 +3819,7 @@ def build_html(
         if (description) description.textContent = incidentLayerVisible ? "Map pins" : "Hidden from map";
       }};
       const updateMarkers = () => {{
-        markers.forEach((marker, eventKey) => {{
-          if (incidentLayerVisible || eventKey === revealedIncidentKey) marker.addTo(map);
-          else marker.remove();
-        }});
+        syncIncidentMarkersToSearch();
       }};
       updateButton();
       button.addEventListener("click", () => {{
@@ -5752,12 +5749,26 @@ def build_html(
         .filter(Boolean).join(" ").toLocaleLowerCase();
     }}
 
+    function incidentMatchesSearch(incident, query) {{
+      return !query || Boolean(incident && searchableIncidentText(incident).includes(query));
+    }}
+
+    function syncIncidentMarkersToSearch(query = incidentSearch.value.trim().toLocaleLowerCase()) {{
+      markers.forEach((marker, eventKey) => {{
+        const incident = incidents.find((item) => item.event_key === eventKey);
+        const matchesSearch = incidentMatchesSearch(incident, query);
+        const layerAllowsMarker = incidentLayerVisible || eventKey === revealedIncidentKey;
+        if (matchesSearch && layerAllowsMarker) marker.addTo(map);
+        else marker.remove();
+      }});
+    }}
+
     function applyIncidentSearch() {{
       const query = incidentSearch.value.trim().toLocaleLowerCase();
       let matches = 0;
       list.querySelectorAll(".incident").forEach((button) => {{
         const incident = incidents.find((item) => item.event_key === button.dataset.eventKey);
-        const match = !query || (incident && searchableIncidentText(incident).includes(query));
+        const match = incidentMatchesSearch(incident, query);
         button.hidden = !match;
         if (match) matches += 1;
       }});
@@ -5765,6 +5776,7 @@ def build_html(
       incidentSearchStatus.textContent = query
         ? `${{matches}} of ${{incidents.length}} incident${{incidents.length === 1 ? "" : "s"}}`
         : `${{incidents.length}} incident${{incidents.length === 1 ? "" : "s"}}`;
+      syncIncidentMarkersToSearch(query);
       list.scrollTop = 0;
       updateListScrollCue();
     }}

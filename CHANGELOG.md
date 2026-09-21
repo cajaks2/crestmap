@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.288 - 2026-09-21
+
+- Keep map incident markers synchronized with the incident-list search so only
+  matching incidents remain visible while a query is active.
+
 ### 0.1.287 - 2026-09-19
 
 - Make the incident URL the authoritative selection state so clean map URLs do
