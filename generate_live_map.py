@@ -2551,6 +2551,10 @@ def build_html(
       object-fit: contain;
       touch-action: pinch-zoom;
     }}
+    .camera-lightbox-image[hidden],
+    .camera-lightbox-video[hidden] {{
+      display: none;
+    }}
     .camera-lightbox-video {{
       display: block;
       width: auto;

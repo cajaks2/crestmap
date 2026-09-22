@@ -347,6 +347,7 @@ def test_build_html_adds_directional_alertcalifornia_camera_layer():
     assert "function openMediaLightbox(" in html
     assert "function closeCameraLightbox()" in html
     assert 'data-camera-lightbox-video' in html
+    assert '.camera-lightbox-video[hidden]' in html
     assert 'data-comment-media-open' in html
     assert 'data-media-kind="video"' in html
     assert 'data-media-kind="image"' in html

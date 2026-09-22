@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.293 - 2026-09-21
+
+- Prevent the inactive video player from appearing beside a full-screen comment
+  photo, and likewise keep the inactive image hidden for videos.
+
 ### 0.1.292 - 2026-09-21
 
 - Open photos and videos attached to incident comments in the same full-screen
