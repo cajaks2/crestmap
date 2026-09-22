@@ -14,7 +14,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from aircraft_tracking import load_tracker_status, load_visible_aircraft
-from comments import COMMENT_SUBMISSIONS_TOTAL, pending_count
+from comments import COMMENT_SUBMISSIONS_TOTAL, attach_public_activity_counts, pending_count
 from ecs_logging import log_event, log_exception, run_main
 from push_notifications import (
     CATEGORIES as PUSH_CATEGORIES,
@@ -843,7 +843,11 @@ class LiveMapHandler(BaseHTTPRequestHandler):
     def database_connection(self):
         pool = getattr(self.server, "database_pool", None)
         if pool is None:
-            yield None
+            conn = connect_database(self.database, self.database_url)
+            try:
+                yield conn
+            finally:
+                conn.close()
             return
         with pool.connection() as conn:
             yield conn
@@ -1264,7 +1268,8 @@ class LiveMapHandler(BaseHTTPRequestHandler):
                         conn=conn,
                     )
                     region_statuses = self.region_statuses(hours, conn=conn)
-                incidents = include_linked_incident(incidents, linked_incident)
+                    incidents = include_linked_incident(incidents, linked_incident)
+                    attach_public_activity_counts(conn, incidents)
                 payload = {
                     "incidents": incidents,
                     "status": {**incident_status(incidents, hours), "region": region},
@@ -1326,7 +1331,8 @@ class LiveMapHandler(BaseHTTPRequestHandler):
                     region=region,
                     conn=conn,
                 )
-            incidents = include_linked_incident(incidents, linked_incident)
+                incidents = include_linked_incident(incidents, linked_incident)
+                attach_public_activity_counts(conn, incidents)
             if path in summary_paths:
                 body = build_summary_html(
                     incidents,

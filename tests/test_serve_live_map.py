@@ -814,6 +814,13 @@ def test_incident_comments_are_published_automatically(tmp_path):
         assert response.status_code == 200
         assert len(response.json()["data"]) == 1
 
+        incident = next(
+            item for item in client.get("/incidents.json?hours=720").json()["incidents"]
+            if item["event_key"] == event_key
+        )
+        assert incident["comment_count"] == 1
+        assert incident["media_count"] == 0
+
     conn = connect_database(database)
     row = conn.execute("SELECT * FROM incident_comments").fetchone()
     assert row["status"] == "approved"
@@ -913,6 +920,13 @@ def test_incident_media_upload_is_published_with_comment(tmp_path):
         )
         assert finalize_response.status_code == 200
         assert finalize_response.json()["status"] == "approved"
+
+        incident = next(
+            item for item in client.get("/incidents.json?hours=720").json()["incidents"]
+            if item["event_key"] == event_key
+        )
+        assert incident["comment_count"] == 1
+        assert incident["media_count"] == 1
 
         response = client.get(f"/api/v1/media/{upload['id']}", follow_redirects=False)
         assert response.status_code == 302

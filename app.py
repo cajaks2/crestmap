@@ -27,6 +27,7 @@ from road_weather import RoadWeatherUnavailable, load_road_weather
 from aircraft_tracking import load_tracker_status, load_visible_aircraft
 from comments import (
     CommentValidationError,
+    attach_public_activity_counts,
     comment_status_counts,
     delete_comment,
     list_approved_comments,
@@ -337,7 +338,12 @@ def client_log_fields(request):
 def database_connection(app):
     pool = getattr(app.state, "database_pool", None)
     if pool is None:
-        yield None
+        settings = app.state.settings
+        conn = connect_database(settings.database, settings.database_url)
+        try:
+            yield conn
+        finally:
+            conn.close()
         return
     with pool.connection() as conn:
         yield conn
@@ -1345,7 +1351,8 @@ def dispatch_request(request, send_body=True):
                     conn=conn,
                 )
                 current_region_statuses = region_statuses(settings, hours, conn=conn)
-            incidents = include_linked_incident(incidents, linked_incident)
+                incidents = include_linked_incident(incidents, linked_incident)
+                attach_public_activity_counts(conn, incidents)
             payload = {
                 "incidents": incidents,
                 "status": {**incident_status(incidents, hours), "region": region},
@@ -1431,7 +1438,8 @@ def dispatch_request(request, send_body=True):
                 region=region,
                 conn=conn,
             )
-        incidents = include_linked_incident(incidents, linked_incident)
+            incidents = include_linked_incident(incidents, linked_incident)
+            attach_public_activity_counts(conn, incidents)
         if path in summary_paths:
             body = build_summary_html(
                 incidents,

@@ -449,7 +449,6 @@ def test_summary_uses_malibu_road_buckets_for_malibu_region():
             "longitude": -118.62,
         },
     ]
-
     summary_html = build_summary_html(
         incidents,
         "2026-05-31T08:05:00-07:00",
@@ -554,6 +553,8 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
             "detail_entries": [],
         },
     ]
+    incidents[0]["comment_count"] = 2
+    incidents[0]["media_count"] = 1
 
     html = build_html(
         incidents,
@@ -602,6 +603,9 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "function syncIncidentMarkersToSearch" in html
     assert "syncIncidentMarkersToSearch(query);" in html
     assert "matchesSearch && layerAllowsMarker" in html
+    assert "function incidentActivityHtml(incident)" in html
+    assert 'class="incident-activity-item"' in html
+    assert "updateIncidentActivity(incident, comments);" in html
     assert ".incident[hidden] {\n      display: none !important;" in html
     assert 'bindListDrag(listHandle)' in html
     assert "flex-basis: clamp(150px, 23svh, 200px)" in html

@@ -2197,6 +2197,32 @@ def build_html(
     .incident .incident-location-secondary {{
       margin-bottom: 3px;
     }}
+    .incident .incident-activity {{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 7px;
+      color: #52645a;
+      font-size: 11px;
+      font-weight: 750;
+    }}
+    .incident .incident-activity-item {{
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: inherit;
+      font-size: inherit;
+      line-height: 1;
+    }}
+    .incident-activity-item svg {{
+      width: 13px;
+      height: 13px;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.8;
+    }}
     .incident .incident-heading {{
       display: flex;
       align-items: flex-start;
@@ -4544,6 +4570,31 @@ def build_html(
       `;
     }}
 
+    function incidentActivityHtml(incident) {{
+      const commentCount = Number(incident.comment_count || 0);
+      const mediaCount = Number(incident.media_count || 0);
+      if (!commentCount && !mediaCount) return "";
+      const items = [];
+      if (commentCount) {{
+        items.push(`<span class="incident-activity-item"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4.5h12v8H9l-4 3v-3H4z"></path></svg>${{commentCount}} ${{commentCount === 1 ? "comment" : "comments"}}</span>`);
+      }}
+      if (mediaCount) {{
+        items.push(`<span class="incident-activity-item"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="14" height="12" rx="2"></rect><circle cx="7" cy="8" r="1.3"></circle><path d="m5 14 3.5-3 2.5 2 2-2 2 3"></path></svg>${{mediaCount}} media</span>`);
+      }}
+      return `<span class="incident-activity" aria-label="${{commentCount}} comments and ${{mediaCount}} media items">${{items.join("")}}</span>`;
+    }}
+
+    function updateIncidentActivity(incident, comments) {{
+      incident.comment_count = comments.length;
+      incident.media_count = comments.reduce((total, comment) => total + (comment.media?.length || 0), 0);
+      const button = [...list.querySelectorAll(".incident")]
+        .find((item) => item.dataset.eventKey === incident.event_key);
+      if (!button) return;
+      button.querySelector(".incident-activity")?.remove();
+      const activity = incidentActivityHtml(incident);
+      if (activity) button.insertAdjacentHTML("beforeend", activity);
+    }}
+
     function videoMetadata(file) {{
       return new Promise((resolve, reject) => {{
         const video = document.createElement("video");
@@ -4669,7 +4720,9 @@ def build_html(
           throw new Error(`comments API returned ${{response.status}}`);
         }}
         const payload = await response.json();
-        renderComments(container, payload.data || []);
+        const comments = payload.data || [];
+        renderComments(container, comments);
+        updateIncidentActivity(incident, comments);
       }} catch (_error) {{
         container.innerHTML = '<div class="empty">Comments could not be loaded.</div>';
       }}
@@ -5844,6 +5897,7 @@ def build_html(
           ${{locationLines.primary ? `<span class="incident-location-primary">${{escapeHtml(locationLines.primary)}}</span>` : ""}}
           ${{locationLines.secondary ? `<span class="incident-location-secondary">${{escapeHtml(locationLines.secondary)}}</span>` : ""}}
           <span>${{escapeHtml(formatIncidentWhen(incident))}} · ${{escapeHtml(incident.area)}} · #${{escapeHtml(incident.incident_no)}}${{hasCoords ? "" : " · no map pin"}}</span>
+          ${{incidentActivityHtml(incident)}}
         `;
         button.addEventListener("click", () => selectIncident(incident, {{
           pulse: true,

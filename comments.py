@@ -107,6 +107,37 @@ def list_approved_comments(conn, event_key):
     return [public_comment(row) for row in rows]
 
 
+def attach_public_activity_counts(conn, incidents):
+    """Attach approved comment and media totals with one query for a list view."""
+    event_keys = list(dict.fromkeys(
+        incident.get("event_key") for incident in incidents if incident.get("event_key")
+    ))
+    counts = {}
+    if event_keys:
+        ph = placeholder(conn)
+        marks = ", ".join([ph] * len(event_keys))
+        rows = conn.execute(
+            f"""
+            SELECT c.event_key,
+                   COUNT(DISTINCT c.id) AS comment_count,
+                   COUNT(DISTINCT m.id) AS media_count
+            FROM incident_comments c
+            LEFT JOIN incident_media m
+              ON m.comment_id = c.id AND m.status = 'approved'
+            WHERE c.status = 'approved'
+              AND c.event_key IN ({marks})
+            GROUP BY c.event_key
+            """,
+            tuple(event_keys),
+        ).fetchall()
+        counts = {row["event_key"]: dict(row) for row in rows}
+    for incident in incidents:
+        activity = counts.get(incident.get("event_key"), {})
+        incident["comment_count"] = int(activity.get("comment_count") or 0)
+        incident["media_count"] = int(activity.get("media_count") or 0)
+    return incidents
+
+
 def rate_limit_count(conn, ip_hash, user_agent, since):
     if not ip_hash:
         return 0

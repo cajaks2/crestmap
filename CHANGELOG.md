@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.289 - 2026-09-21
+
+- Show approved comment and submitted-media totals on incident-list rows, using
+  one aggregate query per incident payload and live count updates in open details.
+
 ### 0.1.288 - 2026-09-21
 
 - Keep map incident markers synchronized with the incident-list search so only
