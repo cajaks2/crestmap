@@ -6030,6 +6030,10 @@ def build_html(
       // in-memory selection after a data refresh or browser page restoration.
       const selectedIncident = linkedIncident;
       if (!selectedIncident) {{
+        if (selectedIncidentKey && options.preserveMissingLinkedIncident) {{
+          detailsPanel.innerHTML = '<div class="empty">Loading linked incident…</div>';
+          return;
+        }}
         selectedIncidentKey = null;
         detailsPanel.innerHTML = '<div class="empty">Select an incident to view details.</div>';
         window.chpLiveMap?.workspace?.closeSheet();
@@ -6052,7 +6056,8 @@ def build_html(
       setLastScrape(payload.last_scrape);
       render({{
         preserveViewport: Boolean(options.preserveViewport),
-        preserveFocusedComment: true
+        preserveFocusedComment: true,
+        preserveMissingLinkedIncident: Boolean(options.preserveMissingLinkedIncident)
       }});
     }}
 
@@ -6103,7 +6108,10 @@ def build_html(
       }}
       if (snapshot) {{
         activeSnapshotSavedAt = snapshot.payload.checked_at || snapshot.saved_at;
-        applyIncidentPayload(snapshot.payload, {{ preserveViewport: true }});
+        applyIncidentPayload(snapshot.payload, {{
+          preserveViewport: true,
+          preserveMissingLinkedIncident: true,
+        }});
         setConnectivityStatus(navigator.onLine ? "reconnecting" : "offline", activeSnapshotSavedAt);
       }}
       try {{

@@ -634,6 +634,8 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "data-default-view" in html
     assert "linked-pill" in html
     assert "This linked incident is outside the selected" in html
+    assert "Loading linked incident…" in html
+    assert "preserveMissingLinkedIncident: true" in html
     assert "height: 45svh" in html
     assert "bottom: max(10px, env(safe-area-inset-bottom))" in html
     assert '#app[data-map-sheet="expanded"] .mobile-map-toolbar' in html

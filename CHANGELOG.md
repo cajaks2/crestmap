@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.298 - 2026-09-21
+
+- Preserve direct links to incidents older than 30 days while the cached list is
+  displayed, allowing the live request to retrieve the linked database record.
+
 ### 0.1.297 - 2026-09-21
 
 - Restyle community activity as a cream panel with a muted gold outline and
