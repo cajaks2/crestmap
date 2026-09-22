@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.297 - 2026-09-21
+
+- Restyle community activity as a cream panel with a muted gold outline and
+  accents, while returning the counts to dark green for readability.
+
 ### 0.1.296 - 2026-09-21
 
 - Use a warm gold accent for community comment and media activity so it stands
