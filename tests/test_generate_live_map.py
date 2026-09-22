@@ -605,8 +605,7 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "matchesSearch && layerAllowsMarker" in html
     assert "function incidentActivityHtml(incident)" in html
     assert 'class="incident-activity-item"' in html
-    assert 'border-radius: 999px;' in html
-    assert '.incident[aria-current="true"] .incident-activity-item' in html
+    assert 'class="incident-activity-separator"' in html
     assert "updateIncidentActivity(incident, comments);" in html
     assert ".incident[hidden] {\n      display: none !important;" in html
     assert 'bindListDrag(listHandle)' in html

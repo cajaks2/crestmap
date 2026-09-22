@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.291 - 2026-09-21
+
+- Restyle incident community counts as emphasized inline metadata without
+  button-like borders, backgrounds, shadows, or pill shapes.
+
 ### 0.1.290 - 2026-09-21
 
 - Make incident comment and media activity more prominent with compact bordered

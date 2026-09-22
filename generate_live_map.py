@@ -2201,29 +2201,25 @@ def build_html(
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 5px;
       margin-top: 8px;
-      color: #1f6840;
-      font-size: 11px;
+      color: #17623a;
+      font-size: 12px;
       font-weight: 850;
     }}
     .incident .incident-activity-item {{
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      min-height: 24px;
-      padding: 3px 7px;
-      border: 1px solid #b8d6bf;
-      border-radius: 999px;
-      color: #195f39;
-      background: #e8f5ea;
-      box-shadow: 0 1px 2px rgba(24, 74, 43, 0.08);
+      color: inherit;
       font-size: inherit;
       line-height: 1;
     }}
-    .incident[aria-current="true"] .incident-activity-item {{
-      border-color: #9fc2a8;
-      background: rgba(255, 255, 255, 0.9);
+    .incident .incident-activity-separator {{
+      display: inline;
+      color: #7a8a80;
+      font-size: 11px;
+      font-weight: 700;
     }}
     .incident-activity-item svg {{
       width: 13px;
@@ -4592,7 +4588,7 @@ def build_html(
       if (mediaCount) {{
         items.push(`<span class="incident-activity-item"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="14" height="12" rx="2"></rect><circle cx="7" cy="8" r="1.3"></circle><path d="m5 14 3.5-3 2.5 2 2-2 2 3"></path></svg>${{mediaCount}} media</span>`);
       }}
-      return `<span class="incident-activity" aria-label="${{commentCount}} comments and ${{mediaCount}} media items">${{items.join("")}}</span>`;
+      return `<span class="incident-activity" aria-label="${{commentCount}} comments and ${{mediaCount}} media items">${{items.join('<span class="incident-activity-separator" aria-hidden="true">·</span>')}}</span>`;
     }}
 
     function updateIncidentActivity(incident, comments) {{

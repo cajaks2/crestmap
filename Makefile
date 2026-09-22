@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 IMAGE_REPO ?= cajaks2/crestmap
-VERSION ?= 0.1.290
+VERSION ?= 0.1.291
 PLATFORM ?= linux/amd64
 MANIFEST ?= k8s/crestmap.yaml
 NAMESPACE ?= crestmap
