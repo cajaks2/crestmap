@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.294 - 2026-09-21
+
+- Give incident comment and media totals a stronger flat community-activity
+  callout with increased contrast and icon size.
+
 ### 0.1.293 - 2026-09-21
 
 - Prevent the inactive video player from appearing beside a full-screen comment

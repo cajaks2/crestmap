@@ -2201,11 +2201,26 @@ def build_html(
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 5px;
-      margin-top: 8px;
-      color: #17623a;
-      font-size: 12px;
+      gap: 6px;
+      margin-top: 10px;
+      padding: 6px 8px;
+      border-left: 3px solid #24814b;
+      color: #0e6035;
+      background: #edf7ef;
+      font-size: 13px;
       font-weight: 850;
+    }}
+    .incident .incident-activity::before {{
+      content: "Community";
+      color: #476051;
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.07em;
+      line-height: 1;
+      text-transform: uppercase;
+    }}
+    .incident[aria-current="true"] .incident-activity {{
+      background: rgba(255, 255, 255, 0.72);
     }}
     .incident .incident-activity-item {{
       display: inline-flex;
@@ -2222,8 +2237,8 @@ def build_html(
       font-weight: 700;
     }}
     .incident-activity-item svg {{
-      width: 13px;
-      height: 13px;
+      width: 15px;
+      height: 15px;
       fill: none;
       stroke: currentColor;
       stroke-linecap: round;
