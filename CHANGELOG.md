@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.295 - 2026-09-21
+
+- Blend the incident community-activity callout into its card with a soft fading
+  highlight and divider instead of a rigid rectangular block.
+
 ### 0.1.294 - 2026-09-21
 
 - Give incident comment and media totals a stronger flat community-activity

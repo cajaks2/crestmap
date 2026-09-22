@@ -2203,10 +2203,10 @@ def build_html(
       flex-wrap: wrap;
       gap: 6px;
       margin-top: 10px;
-      padding: 6px 8px;
-      border-left: 3px solid #24814b;
+      padding: 7px 4px 3px;
+      border-top: 1px solid rgba(36, 129, 75, 0.24);
       color: #0e6035;
-      background: #edf7ef;
+      background: linear-gradient(90deg, rgba(36, 129, 75, 0.1), rgba(36, 129, 75, 0) 82%);
       font-size: 13px;
       font-weight: 850;
     }}
@@ -2220,7 +2220,7 @@ def build_html(
       text-transform: uppercase;
     }}
     .incident[aria-current="true"] .incident-activity {{
-      background: rgba(255, 255, 255, 0.72);
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0) 82%);
     }}
     .incident .incident-activity-item {{
       display: inline-flex;
