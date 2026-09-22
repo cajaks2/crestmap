@@ -2200,19 +2200,30 @@ def build_html(
     .incident .incident-activity {{
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-top: 7px;
-      color: #52645a;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+      color: #1f6840;
       font-size: 11px;
-      font-weight: 750;
+      font-weight: 850;
     }}
     .incident .incident-activity-item {{
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      color: inherit;
+      min-height: 24px;
+      padding: 3px 7px;
+      border: 1px solid #b8d6bf;
+      border-radius: 999px;
+      color: #195f39;
+      background: #e8f5ea;
+      box-shadow: 0 1px 2px rgba(24, 74, 43, 0.08);
       font-size: inherit;
       line-height: 1;
+    }}
+    .incident[aria-current="true"] .incident-activity-item {{
+      border-color: #9fc2a8;
+      background: rgba(255, 255, 255, 0.9);
     }}
     .incident-activity-item svg {{
       width: 13px;
@@ -2221,7 +2232,7 @@ def build_html(
       stroke: currentColor;
       stroke-linecap: round;
       stroke-linejoin: round;
-      stroke-width: 1.8;
+      stroke-width: 2;
     }}
     .incident .incident-heading {{
       display: flex;

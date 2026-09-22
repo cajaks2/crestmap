@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.290 - 2026-09-21
+
+- Make incident comment and media activity more prominent with compact bordered
+  green chips and a high-contrast selected-row treatment.
+
 ### 0.1.289 - 2026-09-21
 
 - Show approved comment and submitted-media totals on incident-list rows, using
