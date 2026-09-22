@@ -343,8 +343,15 @@ def test_build_html_adds_directional_alertcalifornia_camera_layer():
     assert 'title="Open full-size image"' in html
     assert "if (imageLink) imageLink.href = refreshedImageUrl" in html
     assert 'id="camera-lightbox"' in html
-    assert "function openCameraLightbox(camera, imageUrl)" in html
+    assert "function openCameraLightbox(camera, imageUrl, trigger = null)" in html
+    assert "function openMediaLightbox(" in html
     assert "function closeCameraLightbox()" in html
+    assert 'data-camera-lightbox-video' in html
+    assert 'data-comment-media-open' in html
+    assert 'data-media-kind="video"' in html
+    assert 'data-media-kind="image"' in html
+    assert 'window.crestmapTrack?.("comment_media_open"' in html
+    assert "setupMediaLightbox();" in html
     assert "bindCameraImageLightbox(camera);" in html
     assert 'event.key === "Escape"' in html
     assert "appShell.inert = true" in html

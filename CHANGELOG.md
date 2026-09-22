@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.292 - 2026-09-21
+
+- Open photos and videos attached to incident comments in the same full-screen
+  media viewer used for fire-camera imagery.
+
 ### 0.1.291 - 2026-09-21
 
 - Restyle incident community counts as emphasized inline metadata without

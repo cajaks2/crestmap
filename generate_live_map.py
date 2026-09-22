@@ -2551,6 +2551,14 @@ def build_html(
       object-fit: contain;
       touch-action: pinch-zoom;
     }}
+    .camera-lightbox-video {{
+      display: block;
+      width: auto;
+      max-width: 100%;
+      height: auto;
+      max-height: calc(100dvh - 112px);
+      background: #000;
+    }}
     body.camera-lightbox-open {{
       overflow: hidden;
     }}
@@ -2938,6 +2946,20 @@ def build_html(
       gap: 8px;
       margin-top: 9px;
     }}
+    .comment-media-open {{
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      border-radius: 7px;
+      background: #111;
+      cursor: zoom-in;
+      overflow: hidden;
+    }}
+    .comment-media-open:focus-visible {{
+      outline: 3px solid rgba(31, 104, 64, 0.42);
+      outline-offset: 3px;
+    }}
     .comment-media img,
     .comment-media video {{
       display: block;
@@ -3140,7 +3162,8 @@ def build_html(
       .camera-lightbox-header {{
         padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
       }}
-      .camera-lightbox-image {{
+      .camera-lightbox-image,
+      .camera-lightbox-video {{
         max-height: calc(100dvh - 70px - env(safe-area-inset-top));
       }}
       #app {{
@@ -3333,6 +3356,7 @@ def build_html(
       </div>
       <div class="camera-lightbox-stage">
         <img class="camera-lightbox-image" data-camera-lightbox-image alt="">
+        <video class="camera-lightbox-video" data-camera-lightbox-video controls playsinline hidden></video>
       </div>
     </div>
   </div>
@@ -3680,8 +3704,11 @@ def build_html(
     const cameraLayerToggle = document.querySelector("[data-camera-layer-toggle]");
     const cameraLightbox = document.getElementById("camera-lightbox");
     const cameraLightboxImage = cameraLightbox?.querySelector("[data-camera-lightbox-image]");
+    const cameraLightboxVideo = cameraLightbox?.querySelector("[data-camera-lightbox-video]");
     const cameraLightboxTitle = document.getElementById("camera-lightbox-title");
+    const cameraLightboxSubtitle = cameraLightbox?.querySelector(".camera-lightbox-heading span");
     const cameraLightboxClose = cameraLightbox?.querySelector("[data-camera-lightbox-close]");
+    let cameraLightboxTrigger = null;
     const connectionStatus = document.getElementById("connection-status");
     let activeSnapshotSavedAt = null;
     window.chpLiveMap = {{ map, markers, cameraMarkers, aircraftMarkers, aircraftTrails, cameraLayer, cameraFovLayer, mileMarkerLayer, offlineBasemapLayer, incidents, cameras, status: currentDataStatus }};
@@ -4568,8 +4595,8 @@ def build_html(
               <div class="comment-body">${{escapeHtml(comment.body || "")}}</div>
               ${{comment.media?.length ? `<div class="comment-media">${{comment.media.map((item) =>
                 item.kind === "video"
-                  ? `<video src="${{escapeHtml(item.url)}}" controls preload="metadata" playsinline></video>`
-                  : `<img src="${{escapeHtml(item.url)}}" alt="Submitted incident photo" loading="lazy">`
+                  ? `<button type="button" class="comment-media-open" data-comment-media-open data-media-kind="video" data-media-url="${{escapeHtml(item.url)}}" aria-label="Open submitted incident video full screen"><video src="${{escapeHtml(item.url)}}" preload="metadata" playsinline muted></video></button>`
+                  : `<button type="button" class="comment-media-open" data-comment-media-open data-media-kind="image" data-media-url="${{escapeHtml(item.url)}}" aria-label="Open submitted incident photo full screen"><img src="${{escapeHtml(item.url)}}" alt="Submitted incident photo" loading="lazy"></button>`
               ).join("")}}</div>` : ""}}
             </article>
           `).join("")}}
@@ -4923,23 +4950,55 @@ def build_html(
       if (!cameraLightbox || cameraLightbox.hidden) return;
       cameraLightbox.hidden = true;
       delete cameraLightbox.dataset.cameraId;
+      if (cameraLightboxVideo) {{
+        cameraLightboxVideo.pause();
+        cameraLightboxVideo.removeAttribute("src");
+        cameraLightboxVideo.load();
+        cameraLightboxVideo.hidden = true;
+      }}
+      if (cameraLightboxImage) {{
+        cameraLightboxImage.removeAttribute("src");
+        cameraLightboxImage.hidden = false;
+      }}
       document.body.classList.remove("camera-lightbox-open");
       if (appShell) appShell.inert = false;
-      const imageLink = detailsPanel.querySelector("[data-camera-image-link]");
-      if (imageLink) imageLink.focus({{ preventScroll: true }});
+      cameraLightboxTrigger?.focus({{ preventScroll: true }});
+      cameraLightboxTrigger = null;
     }}
 
-    function openCameraLightbox(camera, imageUrl) {{
-      if (!cameraLightbox || !cameraLightboxImage || !camera) return;
-      cameraLightbox.dataset.cameraId = camera.id;
-      cameraLightboxImage.src = imageUrl;
-      cameraLightboxImage.alt = `Full-size current view from ${{camera.name || "ALERTCalifornia camera"}}`;
-      if (cameraLightboxTitle) cameraLightboxTitle.textContent = camera.name || "Camera view";
+    function openMediaLightbox({{ kind = "image", url, title, subtitle = "", alt = "", trigger = null }}) {{
+      if (!cameraLightbox || !cameraLightboxImage || !cameraLightboxVideo || !url) return;
+      cameraLightboxTrigger = trigger;
+      if (kind === "video") {{
+        cameraLightboxImage.hidden = true;
+        cameraLightboxVideo.hidden = false;
+        cameraLightboxVideo.src = url;
+      }} else {{
+        cameraLightboxVideo.hidden = true;
+        cameraLightboxImage.hidden = false;
+        cameraLightboxImage.src = url;
+        cameraLightboxImage.alt = alt;
+      }}
+      if (cameraLightboxTitle) cameraLightboxTitle.textContent = title;
+      if (cameraLightboxSubtitle) cameraLightboxSubtitle.textContent = subtitle;
       cameraLightbox.hidden = false;
-      window.crestmapTrack?.("camera_image_open", {{ camera_status: cameraIsOnline(camera) ? "online" : "offline" }});
       document.body.classList.add("camera-lightbox-open");
       if (appShell) appShell.inert = true;
       cameraLightboxClose?.focus({{ preventScroll: true }});
+    }}
+
+    function openCameraLightbox(camera, imageUrl, trigger = null) {{
+      if (!camera) return;
+      cameraLightbox.dataset.cameraId = camera.id;
+      openMediaLightbox({{
+        kind: "image",
+        url: imageUrl,
+        title: camera.name || "Camera view",
+        subtitle: "ALERTCalifornia | UC San Diego",
+        alt: `Full-size current view from ${{camera.name || "ALERTCalifornia camera"}}`,
+        trigger,
+      }});
+      window.crestmapTrack?.("camera_image_open", {{ camera_status: cameraIsOnline(camera) ? "online" : "offline" }});
     }}
 
     function bindCameraImageLightbox(camera) {{
@@ -4948,7 +5007,7 @@ def build_html(
       imageLink.addEventListener("click", (event) => {{
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
-        openCameraLightbox(camera, imageLink.href);
+        openCameraLightbox(camera, imageLink.href, imageLink);
       }});
     }}
 
@@ -5206,8 +5265,7 @@ def build_html(
       }}
     }}
 
-    function setupCameraLayer() {{
-      if (!cameraLayerToggle) return;
+    function setupMediaLightbox() {{
       cameraLightboxClose?.addEventListener("click", closeCameraLightbox);
       cameraLightbox?.addEventListener("click", (event) => {{
         if (event.target === cameraLightbox || event.target.classList.contains("camera-lightbox-stage")) {{
@@ -5217,6 +5275,26 @@ def build_html(
       document.addEventListener("keydown", (event) => {{
         if (event.key === "Escape" && !cameraLightbox?.hidden) closeCameraLightbox();
       }});
+      detailsPanel.addEventListener("click", (event) => {{
+        const trigger = event.target.closest?.("[data-comment-media-open]");
+        if (!trigger) return;
+        event.preventDefault();
+        delete cameraLightbox.dataset.cameraId;
+        const kind = trigger.dataset.mediaKind === "video" ? "video" : "image";
+        openMediaLightbox({{
+          kind,
+          url: trigger.dataset.mediaUrl,
+          title: kind === "video" ? "Submitted incident video" : "Submitted incident photo",
+          subtitle: "Community submission",
+          alt: "Full-size submitted incident photo",
+          trigger,
+        }});
+        window.crestmapTrack?.("comment_media_open", {{ media_kind: kind }});
+      }});
+    }}
+
+    function setupCameraLayer() {{
+      if (!cameraLayerToggle) return;
       L.DomEvent.disableClickPropagation(cameraLayerToggle);
       updateCameraLayerButton();
       map.on("zoomend", renderSelectedCameraFov);
@@ -6033,6 +6111,7 @@ def build_html(
     setupDoubleTapZoom();
     setupMileMarkerLayer();
     setupUserLocation();
+    setupMediaLightbox();
     setupCameraLayer();
     setupAircraftLayer();
     {temperature_script(app_path(base_path, "/api/v1/temperature"))}
