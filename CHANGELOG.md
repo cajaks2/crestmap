@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.296 - 2026-09-21
+
+- Use a warm gold accent for community comment and media activity so it stands
+  apart from green incident-state styling.
+
 ### 0.1.295 - 2026-09-21
 
 - Blend the incident community-activity callout into its card with a soft fading

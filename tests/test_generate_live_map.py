@@ -615,7 +615,7 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert 'class="incident-activity-item"' in html
     assert 'class="incident-activity-separator"' in html
     assert 'content: "Community";' in html
-    assert 'background: linear-gradient(90deg, rgba(36, 129, 75, 0.1)' in html
+    assert 'background: linear-gradient(90deg, rgba(239, 181, 48, 0.18)' in html
     assert "updateIncidentActivity(incident, comments);" in html
     assert ".incident[hidden] {\n      display: none !important;" in html
     assert 'bindListDrag(listHandle)' in html

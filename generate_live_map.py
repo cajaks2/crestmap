@@ -2204,15 +2204,15 @@ def build_html(
       gap: 6px;
       margin-top: 10px;
       padding: 7px 4px 3px;
-      border-top: 1px solid rgba(36, 129, 75, 0.24);
-      color: #0e6035;
-      background: linear-gradient(90deg, rgba(36, 129, 75, 0.1), rgba(36, 129, 75, 0) 82%);
+      border-top: 1px solid rgba(185, 119, 16, 0.38);
+      color: #794800;
+      background: linear-gradient(90deg, rgba(239, 181, 48, 0.18), rgba(239, 181, 48, 0) 82%);
       font-size: 13px;
       font-weight: 850;
     }}
     .incident .incident-activity::before {{
       content: "Community";
-      color: #476051;
+      color: #684b19;
       font-size: 9px;
       font-weight: 900;
       letter-spacing: 0.07em;
@@ -2220,7 +2220,7 @@ def build_html(
       text-transform: uppercase;
     }}
     .incident[aria-current="true"] .incident-activity {{
-      background: linear-gradient(90deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0) 82%);
+      background: linear-gradient(90deg, rgba(246, 190, 55, 0.24), rgba(246, 190, 55, 0) 82%);
     }}
     .incident .incident-activity-item {{
       display: inline-flex;
@@ -2232,7 +2232,7 @@ def build_html(
     }}
     .incident .incident-activity-separator {{
       display: inline;
-      color: #7a8a80;
+      color: #a07125;
       font-size: 11px;
       font-weight: 700;
     }}
