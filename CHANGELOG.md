@@ -11,9 +11,13 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.300 - 2026-09-23
+
+- Keep Archive in the navigation menu and remove the separate header button.
+
 ### 0.1.299 - 2026-09-23
 
-- Add Archive to the live map navigation, with a direct desktop link to the historical CCRS crash view.
+- Add Archive to the live map navigation for historical CCRS crashes.
 
 ### 0.1.298 - 2026-09-21
 

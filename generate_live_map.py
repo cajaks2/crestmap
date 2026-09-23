@@ -474,27 +474,6 @@ def push_ui_css():
       align-items: center;
       gap: 7px;
     }
-    .header-archive-link {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 34px;
-      padding: 0 10px;
-      border: 1px solid #b8d1bd;
-      border-radius: 7px;
-      color: #1f6840;
-      background: #f2f8f2;
-      font-size: 12px;
-      font-weight: 850;
-      text-decoration: none;
-    }
-    .header-archive-link:hover, .header-archive-link:focus-visible {
-      border-color: #277447;
-      background: #e8f3e9;
-    }
-    @media (max-width: 760px) {
-      .header-archive-link { display: none; }
-    }
     .header-alert-button {
       display: inline-flex;
       align-items: center;
@@ -1075,7 +1054,6 @@ def view_menu(base_path, current, hours, region="forest", admin_mode=False, airc
         )
     return (
         '<div class="view-header-actions">'
-        '<a class="header-archive-link" href="https://crestmap.us/archive/">Archive</a>'
         '<button type="button" class="header-alert-button" data-open-push-settings '
         'data-header-push-launcher hidden>'
         '<span>Alerts</span><span class="header-alert-status" aria-hidden="true"></span></button>'
