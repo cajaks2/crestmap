@@ -600,6 +600,8 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert 'const sources = selected("push_source")' in html
     assert "scrollbar-width: thin" in html
     assert "view-menu" in html
+    assert '<a class="header-archive-link" href="https://crestmap.us/archive/">Archive</a>' in html
+    assert '<span class="view-menu-label">Archive</span>' in html
     assert 'href="/summary?hours=72&amp;region=forest"' in html
     assert 'href="/history?hours=72&amp;region=forest"' in html
     assert 'id="incident-list-shell"' in html

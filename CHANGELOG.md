@@ -11,6 +11,10 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.299 - 2026-09-23
+
+- Add Archive to the live map navigation, with a direct desktop link to the historical CCRS crash view.
+
 ### 0.1.298 - 2026-09-21
 
 - Preserve direct links to incidents older than 30 days while the cached list is
