@@ -940,6 +940,28 @@ def test_matching_regions_excludes_highway_14_primary_roadway():
     assert matching_regions(forest_road_incident) == {"forest": ["angeles forest"]}
 
 
+def test_matching_regions_excludes_nearby_forest_freeways():
+    for location, description in (
+        ("I210 E / Sr2 S", "EB 210 TO SB2 CON"),
+        ("I210 W / Angeles Crest Hwy", "WB 210 JEO ANGELES CREST"),
+        ("I210 E Sr2 Con / Sr2 S", "EB 210 TRANS SB 2"),
+        ("Sr2 N / I210 W Sr2 Con", "NB SR2 TRANS WB 210"),
+        ("Sr2 N / Verdugo Blvd", "NB 2 AT VERDUGO"),
+        ("Sr2 N / Foothill Blvd", "NB 2 JSO FOOTHILL"),
+    ):
+        assert matching_regions({"location": location, "location_desc": description}) == {}
+
+    assert matching_regions({"location": "Angeles Crest Hwy / Mt Wilson Red Box Rd"}) == {
+        "forest": ["angeles crest", "mt wilson", "mt wilson red box", "red box"]
+    }
+    assert matching_regions({"location": "Angeles Crest Hwy / I210 W"}) == {
+        "forest": ["angeles crest"]
+    }
+    assert matching_regions({"location": "SR2 / MM 81.00", "center": "SACC"}) == {
+        "forest": ["sr2", "sr 2"]
+    }
+
+
 def test_malibu_bounds_include_point_mugu_to_santa_monica_pch_and_reject_outside_points():
     assert coordinates_in_region_bounds(34.1114, -119.0676, "malibu")
     assert coordinates_in_region_bounds(34.0379, -118.6775, "malibu")

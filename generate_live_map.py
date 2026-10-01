@@ -14,6 +14,7 @@ from temperature_ui import TEMPERATURE_CSS, temperature_script
 from map_workspace_ui import MAP_WORKSPACE_CSS, MAP_WORKSPACE_HTML, MAP_SHEET_HTML, MAP_WORKSPACE_JS
 from road_weather_ui import ROAD_WEATHER_CSS, road_weather_script
 from geo_bounds import REGION_BOUNDS, clear_coordinates_outside_region_bounds
+from incident_filters import is_nearby_forest_highway_incident
 from mile_markers import MILE_MARKERS
 
 
@@ -206,7 +207,9 @@ def load_incidents(database, hours, database_url=None, region="forest", conn=Non
         conn.close()
     incidents = []
     for row in rows:
-        incidents.append(hydrate_incident(row, region))
+        incident = hydrate_incident(row, region)
+        if region != "forest" or not is_nearby_forest_highway_incident(incident):
+            incidents.append(incident)
     incidents.sort(key=lambda incident: str(incident.get("incident_no") or ""), reverse=True)
     incidents.sort(key=incident_recency, reverse=True)
     incidents.sort(key=lambda incident: 0 if incident.get("status") == "active" else 1)
@@ -305,7 +308,10 @@ def load_incident_by_key(database, event_key, database_url=None, region="forest"
     ).fetchone()
     if should_close:
         conn.close()
-    return hydrate_incident(row, region) if row else None
+    incident = hydrate_incident(row, region) if row else None
+    if incident and region == "forest" and is_nearby_forest_highway_incident(incident):
+        return None
+    return incident
 
 
 def load_removed_detail_entries(database, event_key, database_url=None, region="forest", conn=None):

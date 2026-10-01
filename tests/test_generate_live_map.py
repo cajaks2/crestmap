@@ -434,6 +434,29 @@ def test_load_incidents_filters_to_forest_region_by_default(tmp_path):
     assert malibu_incidents[0]["longitude"] == -118.68
 
 
+def test_stored_highway_incident_is_absent_from_forest_list_and_direct_link(tmp_path):
+    database = tmp_path / "chp.sqlite"
+    conn = connect_database(database)
+    now = dt.datetime.now().astimezone().isoformat(timespec="seconds")
+    highway = incident_row("LACC|2026-09-30|1230", "active", now, "1230")
+    highway.update({
+        "location": "I210 E / Sr2 S",
+        "location_desc": "EB 210 TO SB2 CON",
+        "latitude": 34.207547,
+        "longitude": -118.217736,
+        "matched_keywords": "sr2;sr 2",
+    })
+    forest = incident_row("LACC|2026-09-30|1231", "active", now, "1231")
+    for row in (highway, forest):
+        upsert_active_event(conn, row)
+        insert_observation(conn, row, "active")
+    conn.commit()
+    conn.close()
+
+    assert [row["event_key"] for row in load_incidents(database, 72)] == [forest["event_key"]]
+    assert load_incident_by_key(database, highway["event_key"]) is None
+
+
 def test_summary_uses_malibu_road_buckets_for_malibu_region():
     incidents = [
         {

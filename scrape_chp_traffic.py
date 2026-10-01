@@ -23,6 +23,7 @@ from zoneinfo import ZoneInfo
 from admin_sessions import SCHEMA as ADMIN_SESSIONS_SCHEMA
 from ecs_logging import log_event, log_exception, run_main
 from geo_bounds import clear_coordinates_outside_region_bounds, coordinates_in_region_bounds
+from incident_filters import is_nearby_forest_highway_incident
 
 
 CHP_TRAFFIC_URL = "https://cad.chp.ca.gov/Traffic.aspx"
@@ -1173,7 +1174,11 @@ def keyword_matches(keyword, haystack):
 
 
 def matching_regions(incident):
-    if is_highway_14_primary_roadway(incident) or is_malibu_101_primary_roadway(incident):
+    if (
+        is_highway_14_primary_roadway(incident)
+        or is_malibu_101_primary_roadway(incident)
+        or is_nearby_forest_highway_incident(incident)
+    ):
         return {}
     matches = {}
     for region, keywords in REGION_ROAD_KEYWORDS.items():

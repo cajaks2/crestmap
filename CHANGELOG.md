@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.301 - 2026-09-30
+
+- Exclude I-210 and nearby city SR-2 freeway incidents from Forest collection,
+  map, and history, including incidents already stored.
+
 ### 0.1.300 - 2026-09-23
 
 - Keep Archive in the navigation menu and remove the separate header button.
