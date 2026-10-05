@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.302 - 2026-10-05
+
+- Make incident choices at overlapping map markers respond reliably to taps and
+  show the full reported date near the top of each incident pane.
+
 ### 0.1.301 - 2026-09-30
 
 - Exclude I-210 and nearby city SR-2 freeway incidents from Forest collection,

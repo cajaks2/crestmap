@@ -95,3 +95,15 @@ def test_rendered_scripts_parse_and_sheet_preserves_full_record(region):
     assert 'marker && options.pan !== false && !mobileViewport.matches' in html
     assert 'data-comment-form' in html
     assert 'data-share-incident' in html
+
+
+def test_incident_pane_formats_full_reported_date():
+    html = build_html([], "2026-10-05T08:15:00-07:00", 72)
+    formatter = html.split("function formatIncidentWhenLong(incident) {", 1)[1]
+    formatter = "function formatIncidentWhenLong(incident) {" + formatter.split("function incidentSourceLabel", 1)[0]
+    run_js(formatter + """
+      const assert = require('node:assert/strict');
+      assert.equal(formatIncidentWhenLong({incident_date: '2026-10-05', incident_time: '8:15 AM'}),
+        'October 5, 2026 at 8:15 AM');
+      assert.equal(formatIncidentWhenLong({incident_date: '2026-10-05'}), 'October 5, 2026');
+    """)

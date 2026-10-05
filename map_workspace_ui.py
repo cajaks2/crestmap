@@ -15,6 +15,7 @@ MAP_WORKSPACE_CSS = """
     .incident-marker .incident-marker-dot { inset: 11px; }
     .incident-marker:focus-visible { outline: 2px solid #245939; outline-offset: 2px; border-radius: 50%; }
     .map-overlap-choice { display: block; width: 100%; padding: 12px; text-align: left; cursor: pointer;
+      touch-action: manipulation;
       background: #fff; border: 0; border-bottom: 1px solid #d8ddd2; color: #263f2e; font: inherit; }
     .map-overlap-choice span { display: block; font-size: 12px; }
     #incident-search-shell { flex: 0 0 auto; padding: 10px 12px 8px; border-bottom: 1px solid #dfe5dc; background: #f7f9f5; }
@@ -341,7 +342,31 @@ MAP_WORKSPACE_JS = r"""
           const button = document.createElement('button');
           button.type = 'button'; button.className = 'map-overlap-choice';
           button.innerHTML = `<strong>${escapeHtml(item.type || 'Incident')}</strong><span>${escapeHtml(incidentStatusLabel(item))} · ${escapeHtml(incidentSourceLabel(item))} · ${escapeHtml(formatIncidentWhen(item))}</span><span>${escapeHtml(incidentLocationLines(item).primary)}</span>`;
-          button.addEventListener('click', () => selectIncident(item, {pan: false, userInitiated: true, pulse: true}));
+          let pointerStart = null;
+          let activated = false;
+          let ignoreClick = false;
+          const choose = () => {
+            if (activated) return;
+            activated = true;
+            selectIncident(item, {pan: false, userInitiated: true, pulse: true});
+          };
+          button.addEventListener('pointerdown', event => {
+            ignoreClick = false;
+            pointerStart = {id: event.pointerId, x: event.clientX, y: event.clientY};
+          });
+          button.addEventListener('pointercancel', () => { pointerStart = null; ignoreClick = true; });
+          button.addEventListener('pointerup', event => {
+            if (!pointerStart || event.pointerId !== pointerStart.id) return;
+            const moved = Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 12;
+            pointerStart = null;
+            ignoreClick = moved;
+            if (!moved) choose();
+          });
+          button.addEventListener('click', () => {
+            const ignored = ignoreClick;
+            ignoreClick = false;
+            if (!ignored) choose();
+          });
           choices.append(button);
         });
         setSheet('expanded');

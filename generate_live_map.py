@@ -2824,6 +2824,14 @@ def build_html(
       font-weight: 800;
       line-height: 1.3;
     }}
+    .detail-reported-at {{
+      display: block;
+      margin: 2px 0 9px;
+      color: #365743;
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.35;
+    }}
     .share-incident,
     .default-view,
     .hidden-details-toggle {{
@@ -4423,6 +4431,16 @@ def build_html(
       return `${{parsed.toLocaleDateString([], {{ month: "short", day: "numeric" }})}}, ${{incident.incident_time || ""}}`.trim();
     }}
 
+    function formatIncidentWhenLong(incident) {{
+      const dateText = incident.incident_date || (incident.first_seen || "").slice(0, 10);
+      if (!dateText) return incident.incident_time || "Date unavailable";
+      const parsed = new Date(`${{dateText}}T12:00:00`);
+      const date = Number.isNaN(parsed.getTime())
+        ? dateText
+        : parsed.toLocaleDateString([], {{ month: "long", day: "numeric", year: "numeric" }});
+      return `${{date}}${{incident.incident_time ? ` at ${{incident.incident_time}}` : ""}}`;
+    }}
+
     function incidentSourceLabel(incident) {{
       return String(incident.source || "chp").toLowerCase() === "wildweb" ? "WildWeb" : "CHP";
     }}
@@ -5572,6 +5590,7 @@ def build_html(
               <div class="status-pill ${{statusClass}}">${{statusText}}</div>
               <div class="source-pill">${{escapeHtml(sourceText)}}</div>
               <h2>${{escapeHtml(incident.type || "Incident")}}</h2>
+              <time class="detail-reported-at" datetime="${{escapeHtml(incident.incident_date || (incident.first_seen || "").slice(0, 10))}}">Reported ${{escapeHtml(formatIncidentWhenLong(incident))}}</time>
               ${{locationLines.primary ? `<div class="detail-location-primary">${{escapeHtml(locationLines.primary)}}</div>` : ""}}
               ${{locationLines.secondary ? `<div class="meta">${{escapeHtml(locationLines.secondary)}}</div>` : ""}}
             </div>
