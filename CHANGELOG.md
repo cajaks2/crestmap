@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.303 - 2026-10-05
+
+- Condense the mobile incident header by putting status and actions on one row
+  and reducing unused space above the title and report time.
+
 ### 0.1.302 - 2026-10-05
 
 - Make incident choices at overlapping map markers respond reliably to taps and

@@ -73,7 +73,7 @@ def test_rendered_scripts_parse_and_sheet_preserves_full_record(region):
     assert 'Continue a downward content scroll as a sheet drag once the record reaches its top.' in html
     assert 'detailContent.scrollTop > 1' in html
     assert 'detailContent.addEventListener("touchmove"' in html
-    assert 'flex: 0 0 52px' in html
+    assert 'flex: 0 0 44px' in html
     assert '#map-sheet-back { min-height: 40px; margin: 0;' in html
     assert 'id="mobile-connection-status" data-state="online"' in html
     assert 'z-index: 700; font-size: 12px; transition: opacity 160ms ease' in html

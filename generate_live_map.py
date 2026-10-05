@@ -2799,6 +2799,26 @@ def build_html(
       display: block;
       margin-bottom: 6px;
     }}
+    .incident-detail-panel .detail-topline {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 4px 8px;
+      margin-bottom: 5px;
+    }}
+    .incident-detail-panel .detail-badges {{
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }}
+    .incident-detail-panel .detail-badges .status-pill,
+    .incident-detail-panel .detail-badges .source-pill {{
+      margin: 0;
+    }}
+    .incident-detail-panel .detail-topline .detail-actions {{
+      margin-top: 0;
+    }}
     .detail-title {{
       min-width: 0;
     }}
@@ -2826,7 +2846,7 @@ def build_html(
     }}
     .detail-reported-at {{
       display: block;
-      margin: 2px 0 9px;
+      margin: 1px 0 5px;
       color: #365743;
       font-size: 13px;
       font-weight: 750;
@@ -5584,20 +5604,24 @@ def build_html(
         ? `<button type="button" class="hidden-details-toggle" data-hidden-details-toggle="${{escapeHtml(incident.event_key)}}" disabled>Checking hidden...</button>`
         : "";
       return `
-        <div class="detail-panel">
+        <div class="detail-panel incident-detail-panel">
           <div class="detail-header">
+            <div class="detail-topline">
+              <div class="detail-badges">
+                <span class="status-pill ${{statusClass}}">${{statusText}}</span>
+                <span class="source-pill">${{escapeHtml(sourceText)}}</span>
+              </div>
+              <div class="detail-actions">
+                ${{defaultButton}}
+                ${{hiddenDetailsButton}}
+                <button type="button" class="share-incident" data-share-incident="${{escapeHtml(incident.event_key)}}">Share</button>
+              </div>
+            </div>
             <div class="detail-title">
-              <div class="status-pill ${{statusClass}}">${{statusText}}</div>
-              <div class="source-pill">${{escapeHtml(sourceText)}}</div>
               <h2>${{escapeHtml(incident.type || "Incident")}}</h2>
               <time class="detail-reported-at" datetime="${{escapeHtml(incident.incident_date || (incident.first_seen || "").slice(0, 10))}}">Reported ${{escapeHtml(formatIncidentWhenLong(incident))}}</time>
               ${{locationLines.primary ? `<div class="detail-location-primary">${{escapeHtml(locationLines.primary)}}</div>` : ""}}
               ${{locationLines.secondary ? `<div class="meta">${{escapeHtml(locationLines.secondary)}}</div>` : ""}}
-            </div>
-            <div class="detail-actions">
-              ${{defaultButton}}
-              ${{hiddenDetailsButton}}
-              <button type="button" class="share-incident" data-share-incident="${{escapeHtml(incident.event_key)}}">Share</button>
             </div>
           </div>
           ${{linkedNotice}}

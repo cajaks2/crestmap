@@ -109,7 +109,7 @@ MAP_WORKSPACE_CSS = """
         visibility: visible; pointer-events: auto; transform: translate3d(0, var(--sheet-drag-y, 0px), 0); transition-delay: 0s; }
       #details.is-dragging { transition: none; }
       .map-sheet-controls { position: relative; display: flex; align-items: center; justify-content: space-between;
-        flex: 0 0 52px; padding: 0 8px; touch-action: none; background: #fff; cursor: grab; }
+        flex: 0 0 44px; padding: 0 8px; touch-action: none; background: #fff; cursor: grab; }
       .map-sheet-controls::before { content: ""; position: absolute; top: 6px; left: calc(50% - 17px);
         width: 34px; height: 4px; background: #c2cec2; border-radius: 3px; }
       #map-sheet-back { min-height: 40px; margin: 0; padding: 6px 11px;
@@ -136,9 +136,10 @@ MAP_WORKSPACE_CSS = """
       #app[data-map-sheet="full"] #detail-content { overflow: auto; overscroll-behavior: contain;
         min-height: 0; -webkit-overflow-scrolling: touch; }
       #details .detail-panel { padding: 10px 14px 18px; }
+      #details .incident-detail-panel { padding-top: 5px; }
       #details .detail-header { margin-bottom: 2px; }
       #details .detail-panel h2 { margin-bottom: 3px; font-size: 17px; }
-      #details .detail-actions { margin-top: 7px; }
+      #details .incident-detail-panel .detail-topline { margin-bottom: 4px; }
       #details .detail-section { margin-top: 10px; padding-top: 10px; }
       #details .detail-log { margin-top: 4px; }
       #details .detail-log li { padding: 7px 0; }
