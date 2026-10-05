@@ -11,6 +11,10 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.304 - 2026-10-05
+
+- Prevent iPhone Safari from zooming the map when the incident search field is focused.
+
 ### 0.1.303 - 2026-10-05
 
 - Condense the mobile incident header by putting status and actions on one row

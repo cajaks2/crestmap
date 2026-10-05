@@ -22,7 +22,7 @@ MAP_WORKSPACE_CSS = """
     #incident-search-shell label { display: block; margin: 0 0 5px; color: #405047; font-size: 11px; font-weight: 800; letter-spacing: .02em; }
     .incident-search-field { position: relative; }
     #incident-search { box-sizing: border-box; width: 100%; min-height: 40px; padding: 8px 38px 8px 12px;
-      border: 1px solid #c9d3c9; border-radius: 9px; background: #fff; color: #24362a; font: 14px/1.3 -apple-system, BlinkMacSystemFont, sans-serif; }
+      border: 1px solid #c9d3c9; border-radius: 9px; background: #fff; color: #24362a; font: 16px/1.3 -apple-system, BlinkMacSystemFont, sans-serif; }
     #incident-search:focus { border-color: #397a50; outline: 3px solid rgba(57,122,80,.15); }
     #incident-search-clear { position: absolute; top: 3px; right: 3px; width: 34px; height: 34px; padding: 0;
       border: 0; background: transparent; color: #496052; font-size: 20px; cursor: pointer; }
