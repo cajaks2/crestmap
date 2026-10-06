@@ -2069,6 +2069,8 @@ def build_html(
       accent-color: #277447;
     }}
     #incident-list-shell {{
+      display: flex;
+      flex-direction: column;
       flex: 1 1 auto;
       min-height: 0;
       position: relative;
@@ -2134,7 +2136,8 @@ def build_html(
       outline-offset: 2px;
     }}
     #incident-list {{
-      height: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
       overflow-y: auto;
       overscroll-behavior: contain;
       scrollbar-gutter: stable;

@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.305 - 2026-10-06
+
+- Keep the desktop incident list within its pane so the final incident can be
+  scrolled fully into view below search.
+
 ### 0.1.304 - 2026-10-05
 
 - Prevent iPhone Safari from zooming the map when the incident search field is focused.
