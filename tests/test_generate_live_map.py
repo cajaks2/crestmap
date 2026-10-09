@@ -980,6 +980,8 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "const size = selected ? 28 : 22" not in html
     assert "position: absolute;" in html
     assert "incident-marker-dot" in html
+    assert ".incident-marker .incident-marker-dot { inset: 11px; }" not in html
+    assert ".incident-marker:focus-visible { outline: 2px solid #245939; outline-offset: 2px; border-radius: 9px; }" in html
     assert ".incident-marker.is-selected .incident-marker-core" in html
     assert ".incident-marker.is-pulsing .incident-marker-dot::after" in html
     assert "@keyframes selected-marker-pulse" in html

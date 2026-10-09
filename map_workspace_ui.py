@@ -12,8 +12,7 @@ MAP_WORKSPACE_CSS = """
     .crestmap-mark-front { fill: #6fbf73; }
     .crestmap-mark circle { fill: #2f8a4e; }
     .crestmap-mark.has-active circle { fill: #d83b3b; }
-    .incident-marker .incident-marker-dot { inset: 11px; }
-    .incident-marker:focus-visible { outline: 2px solid #245939; outline-offset: 2px; border-radius: 50%; }
+    .incident-marker:focus-visible { outline: 2px solid #245939; outline-offset: 2px; border-radius: 9px; }
     .map-overlap-choice { display: block; width: 100%; padding: 12px; text-align: left; cursor: pointer;
       touch-action: manipulation;
       background: #fff; border: 0; border-bottom: 1px solid #d8ddd2; color: #263f2e; font: inherit; }

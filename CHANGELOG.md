@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.307 - 2026-10-08
+
+- Center selected incident badges and replace the leftover circular keyboard
+  focus outline with a rounded square matching the marker.
+
 ### 0.1.306 - 2026-10-08
 
 - Replace plain incident map dots with consistently sized pictograph badges for
