@@ -11,6 +11,13 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.306 - 2026-10-08
+
+- Replace plain incident map dots with consistently sized pictograph badges for
+  collisions, hazards, closures, fires, medical aid, roadwork, and other incidents.
+  Keep status colors and WildWeb aging cues; use a narrower flame and red medical
+  cross. No data migration or reauthentication is required.
+
 ### 0.1.305 - 2026-10-06
 
 - Keep the desktop incident list within its pane so the final incident can be

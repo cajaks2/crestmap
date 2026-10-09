@@ -2415,7 +2415,6 @@ def build_html(
       position: absolute;
       inset: 0;
       display: block;
-      border-radius: 999px;
       pointer-events: none;
     }}
     .camera-marker {{
@@ -2625,65 +2624,53 @@ def build_html(
     .incident-marker-core {{
       box-sizing: border-box;
       position: absolute;
-      inset: 0;
-      display: block;
-      border: 3px solid #7a1a1d;
-      border-radius: 999px;
-      background: #d94a38;
-      box-shadow: 0 1px 6px rgba(24, 32, 38, 0.32);
+      inset: 4px;
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border: 2px solid #923223;
+      border-radius: 7px;
+      color: #fff;
+      background: #c94c39;
+      box-shadow: 0 1px 5px rgba(20, 37, 28, 0.34);
       pointer-events: none;
     }}
+    .incident-marker-core svg {{
+      display: block;
+      width: 26px;
+      height: 26px;
+    }}
     .incident-marker.is-cleared .incident-marker-core {{
-      border-color: #5f6862;
-      background: #b8bfba;
+      border-color: #839189;
+      color: #526159;
+      background: #f5f7f1;
+      opacity: 0.88;
     }}
     .incident-marker.is-wildweb-no-longer-listed .incident-marker-core {{
       border-color: #596a72;
-      background: #b8bfba;
     }}
     .incident-marker.is-wildweb-aged-out .incident-marker-core {{
       border-color: #967037;
-      background: #b8bfba;
     }}
     .incident-marker.is-reported .incident-marker-core {{
-      border-color: #805b12;
-      background: #e5a72f;
+      border-color: #9a671b;
+      color: #3d2b16;
+      background: #e6b14c;
     }}
     .incident-marker.is-wildweb-aging .incident-marker-core {{
       filter: saturate(var(--incident-age-saturation, 1));
       transition: filter 180ms ease;
     }}
     .incident-marker.is-selected .incident-marker-core {{
-      background: #f05a40;
-      box-shadow: 0 2px 9px rgba(24, 32, 38, 0.42);
-    }}
-    .incident-marker.is-selected.is-cleared .incident-marker-core {{
-      background: #9da5a0;
-    }}
-    .incident-marker.is-selected.is-reported .incident-marker-core {{
-      background: #f0b43f;
-    }}
-    .incident-marker.is-selected .incident-marker-dot::before {{
-      content: "";
-      position: absolute;
-      inset: -9px;
-      border: 3px solid rgba(216, 59, 59, 0.76);
-      border-radius: 999px;
-      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.88), 0 2px 12px rgba(24, 32, 38, 0.3);
-      pointer-events: none;
-    }}
-    .incident-marker.is-selected.is-cleared .incident-marker-dot::before {{
-      border-color: rgba(31, 104, 64, 0.78);
-    }}
-    .incident-marker.is-selected.is-reported .incident-marker-dot::before {{
-      border-color: rgba(143, 96, 8, 0.78);
+      box-shadow: 0 0 0 3px #fff, 0 0 0 6px #295b3c, 0 2px 8px rgba(20, 37, 28, 0.54);
     }}
     .incident-marker.is-pulsing .incident-marker-dot::after {{
       content: "";
       position: absolute;
       inset: -10px;
       border: 3px solid rgba(216, 59, 59, 0.65);
-      border-radius: 999px;
+      border-radius: 10px;
       pointer-events: none;
       animation: selected-marker-pulse 900ms ease-out 1;
     }}
@@ -4883,16 +4870,34 @@ def build_html(
     }}
 
     function markerIcon(incident, selected = false, pulsing = false) {{
+      const label = String(incident.type || "").toLowerCase();
+      const category = /collision|hit and run|motor vehicle accident|fatality/.test(label) ? "collision"
+        : /hazard|debris|animal|tree|rock|flood/.test(label) ? "hazard"
+        : /closure|closed|weather|snow|chain control/.test(label) ? "closure"
+        : /wildfire|fire/.test(label) ? "fire"
+        : /medical|med aid/.test(label) ? "medical"
+        : /maintenance|roadwork|construction/.test(label) ? "roadwork" : "other";
+      const symbols = {{
+        collision: '<path d="M2.5 13h5l2 2v2.5h-7V13Zm19-6h-5l-2 2v2.5h7V7Z"/><circle cx="4.5" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="19.5" cy="13" r="1" fill="currentColor" stroke="none"/><path d="m12 8 .9 2.6 2.6.9-2.6.9L12 15l-.9-2.6-2.6-.9 2.6-.9Z" fill="currentColor" stroke="none"/>',
+        hazard: '<path d="m12 4 8 16H4L12 4Z"/><path d="M12 9v5m0 3h.01"/>',
+        closure: '<path d="M4 5h16v12H4zM6 5l6 12m1-12 6 12M7 17v3m10-3v3"/>',
+        fire: '<path d="M12 20c3.4 0 6-2.3 6-5.6 0-2.5-1.3-4.2-2.5-5.7.2 2.1-.9 3.5-2 4.1.2-3.4-1.3-6.5-4-8.8.3 3.5-3.5 6.2-3.5 10.4C6 17.7 8.6 20 12 20Z"/>',
+        medical: '<rect x="3" y="3" width="18" height="18" rx="3" fill="#fff" stroke="none"/><path d="M10 5h4v5h5v4h-5v5h-4v-5H5v-4h5Z" fill="#c63735" stroke="none"/>',
+        roadwork: '<path d="m9 4-5 16m11-16 5 16M6 15h12M4 20h16"/>',
+        other: '<circle cx="12" cy="12" r="8"/><path d="M9 9a3 3 0 1 1 4 3c-1 .6-1 1.2-1 2m0 3h.01"/>'
+      }};
+      const glyph = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${{symbols[category]}}</svg>`;
       const markerState = incident.status === "active" ? "is-active" : incident.status === "reported" ? "is-reported" : "is-cleared";
       const sourceStatus = String(incident.source_status || "").toLowerCase();
       const visualAge = wildWebReportedVisualAge(incident);
       const wildwebEndState = String(incident.source || "").toLowerCase() === "wildweb" && markerState === "is-cleared"
         ? {{ aged_out: "is-wildweb-aged-out", no_longer_listed: "is-wildweb-no-longer-listed" }}[sourceStatus] || ""
         : "";
-      const size = 44; // A 22px visible core inside a generous touch target.
+      const size = 44; // A 36px visible badge inside a generous touch target.
       return L.divIcon({{
         className: [
           "incident-marker",
+          `is-${{category}}`,
           markerState,
           visualAge ? "is-wildweb-aging" : "",
           wildwebEndState,
@@ -4901,7 +4906,7 @@ def build_html(
         ].join(" "),
         iconSize: [size, size],
         iconAnchor: [size / 2, size / 2],
-        html: `<span class="incident-marker-dot" aria-hidden="true"${{visualAge ? ` style="--incident-age-saturation: ${{visualAge.saturation.toFixed(3)}}"` : ""}}><span class="incident-marker-core"></span></span>`
+        html: `<span class="incident-marker-dot" aria-hidden="true"${{visualAge ? ` style="--incident-age-saturation: ${{visualAge.saturation.toFixed(3)}}"` : ""}}><span class="incident-marker-core">${{glyph}}</span></span>`
       }});
     }}
 

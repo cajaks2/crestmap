@@ -964,6 +964,12 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "updateWhenIdle: compactMapRendering" in html
     assert "updateWhenZooming: !compactMapRendering" in html
     assert "function markerIcon" in html
+    assert 'const category = /collision|hit and run|motor vehicle accident|fatality/' in html
+    assert 'fire: \'<path d="M12 20c3.4 0 6-2.3 6-5.6' in html
+    assert 'fill="#c63735"' in html
+    assert 'width: 36px;' in html
+    assert 'width: 26px;' in html
+    assert 'class="incident-marker-core">${glyph}</span>' in html
     assert 'aged_out: "is-wildweb-aged-out"' in html
     assert 'no_longer_listed: "is-wildweb-no-longer-listed"' in html
     assert ".incident-marker.is-wildweb-aged-out .incident-marker-core" in html
@@ -974,7 +980,7 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "const size = selected ? 28 : 22" not in html
     assert "position: absolute;" in html
     assert "incident-marker-dot" in html
-    assert ".incident-marker.is-selected .incident-marker-dot::before" in html
+    assert ".incident-marker.is-selected .incident-marker-core" in html
     assert ".incident-marker.is-pulsing .incident-marker-dot::after" in html
     assert "@keyframes selected-marker-pulse" in html
     assert "selected ? \"is-selected\" : \"\"" in html
