@@ -180,16 +180,13 @@ def test_build_html_labels_wildweb_report_without_claiming_it_is_active_or_clear
     assert '<span class="incident-location-primary">${escapeHtml(locationLines.primary)}</span>' in html
     assert '<div class="detail-location-primary">${escapeHtml(locationLines.primary)}</div>' in html
     assert "<dt>Loc Desc</dt>" not in html
-    assert "function wildWebReportedVisualAge(incident)" in html
-    assert 'source !== "wildweb" || status !== "reported"' in html
-    assert 'incident.source_reported_at || incident.first_seen' in html
-    assert "(ageHours - 1) / 5" in html
-    assert "saturation: 1 - fadeProgress" in html
-    assert "--incident-age-opacity" not in html
-    assert 'visualAge ? "incident is-wildweb-aging" : "incident"' in html
-    assert '.incident.is-wildweb-aging:not([aria-current="true"])' in html
-    assert '.incident.is-wildweb-aging[aria-current="true"] > *' in html
-    assert ".incident-marker.is-wildweb-aging .incident-marker-core" in html
+    assert "wildWebReportedVisualAge" not in html
+    assert "--incident-age-saturation" not in html
+    assert 'button.className = "incident"' in html
+    assert 'medical: \'<path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6Z" fill="currentColor"' in html
+    assert 'fill="#c63735"' not in html
+    assert ".incident-marker.is-cleared .incident-marker-core" in html
+    assert "opacity: 0.88;" not in html
 
 
 def test_incident_location_lines_prioritize_roads_for_chp_and_descriptions_for_wildweb():
@@ -966,16 +963,12 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "function markerIcon" in html
     assert 'const category = /collision|hit and run|motor vehicle accident|fatality/' in html
     assert 'fire: \'<path d="M12 20c3.4 0 6-2.3 6-5.6' in html
-    assert 'fill="#c63735"' in html
+    assert 'fill="#c63735"' not in html
     assert 'width: 36px;' in html
     assert 'width: 26px;' in html
     assert 'class="incident-marker-core">${glyph}</span>' in html
-    assert 'aged_out: "is-wildweb-aged-out"' in html
-    assert 'no_longer_listed: "is-wildweb-no-longer-listed"' in html
-    assert ".incident-marker.is-wildweb-aged-out .incident-marker-core" in html
-    assert "border-color: #967037" in html
-    assert ".incident-marker.is-wildweb-no-longer-listed .incident-marker-core" in html
-    assert "border-color: #596a72" in html
+    assert 'is-wildweb-aged-out' not in html
+    assert 'is-wildweb-no-longer-listed' not in html
     assert "const size = 44;" in html
     assert "const size = selected ? 28 : 22" not in html
     assert "position: absolute;" in html

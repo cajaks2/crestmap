@@ -171,6 +171,10 @@ _lock = threading.Lock()
 class TemperatureUnavailable(Exception):
     """The provider has no fresh, usable estimates."""
 
+    def __init__(self, retry_after=0):
+        super().__init__("temperature estimates are unavailable")
+        self.retry_after = max(0, int(retry_after))
+
 
 def _number(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
@@ -397,7 +401,7 @@ def load_temperatures(region):
                 return {**cached[1], "points": fresh_points}
         if now < _retry_after.get(region, 0):
             record_cache("temperature", region, "retry_suppressed")
-            raise TemperatureUnavailable()
+            raise TemperatureUnavailable(math.ceil(_retry_after[region] - now))
         record_cache("temperature", region, "miss")
         refresh_started = time.monotonic()
         samples = SAMPLE_POINTS[region]
@@ -432,8 +436,8 @@ def load_temperatures(region):
                    "weather.provider": "open_meteo", "event.duration": round(duration * 1_000_000_000),
                    "error.type": exc.__class__.__name__},
             )
-            _retry_after[region] = now + 60
-            raise TemperatureUnavailable() from None
+            _retry_after[region] = time.time() + 60
+            raise TemperatureUnavailable(60) from None
         observations, station_outcomes = load_station_observations(region, now)
         for outcome, count in station_outcomes.items():
             if count:

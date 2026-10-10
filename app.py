@@ -1287,8 +1287,11 @@ def dispatch_request(request, send_body=True):
     if path in {"/api/v1/temperature", f"{asset_base}/api/v1/temperature"}:
         try:
             payload = load_temperatures(region)
-        except TemperatureUnavailable:
-            return api_error("temperature estimates are unavailable", "temperature_unavailable", 503, send_body)
+        except TemperatureUnavailable as exc:
+            response = api_error("temperature estimates are unavailable", "temperature_unavailable", 503, send_body)
+            if exc.retry_after:
+                response.headers["Retry-After"] = str(exc.retry_after)
+            return response
         return json_response(payload, cache_control="public, max-age=60", send_body=send_body)
 
     if path in {"/api/v1/road-weather", f"{asset_base}/api/v1/road-weather"}:

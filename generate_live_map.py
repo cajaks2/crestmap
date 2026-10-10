@@ -2172,16 +2172,6 @@ def build_html(
     .incident[hidden] {{
       display: none !important;
     }}
-    .incident.is-wildweb-aging {{
-      transition: filter 180ms ease, background-color 180ms ease;
-    }}
-    .incident.is-wildweb-aging:not([aria-current="true"]) {{
-      filter: saturate(var(--incident-age-saturation, 1));
-    }}
-    .incident.is-wildweb-aging[aria-current="true"] > * {{
-      filter: saturate(var(--incident-age-saturation, 1));
-      transition: filter 180ms ease;
-    }}
     .incident:hover,
     .incident:focus {{
       background: #eef4ee;
@@ -2645,22 +2635,11 @@ def build_html(
       border-color: #839189;
       color: #526159;
       background: #f5f7f1;
-      opacity: 0.88;
-    }}
-    .incident-marker.is-wildweb-no-longer-listed .incident-marker-core {{
-      border-color: #596a72;
-    }}
-    .incident-marker.is-wildweb-aged-out .incident-marker-core {{
-      border-color: #967037;
     }}
     .incident-marker.is-reported .incident-marker-core {{
       border-color: #9a671b;
       color: #3d2b16;
       background: #e6b14c;
-    }}
-    .incident-marker.is-wildweb-aging .incident-marker-core {{
-      filter: saturate(var(--incident-age-saturation, 1));
-      transition: filter 180ms ease;
     }}
     .incident-marker.is-selected .incident-marker-core {{
       box-shadow: 0 0 0 3px #fff, 0 0 0 6px #295b3c, 0 2px 8px rgba(20, 37, 28, 0.54);
@@ -4502,23 +4481,6 @@ def build_html(
       return status === "active" ? "status-active" : status === "reported" ? "status-reported" : "status-cleared";
     }}
 
-    function wildWebReportedVisualAge(incident) {{
-      const source = String(incident.source || "").toLowerCase();
-      const status = String(incident.status || "").toLowerCase();
-      if (source !== "wildweb" || status !== "reported") {{
-        return null;
-      }}
-      const reportedAt = Date.parse(String(incident.source_reported_at || incident.first_seen || ""));
-      if (!Number.isFinite(reportedAt)) {{
-        return {{ saturation: 1 }};
-      }}
-      const ageHours = Math.max(0, (Date.now() - reportedAt) / 3600000);
-      const fadeProgress = Math.min(1, Math.max(0, (ageHours - 1) / 5));
-      return {{
-        saturation: 1 - fadeProgress
-      }};
-    }}
-
     function formatRangeLabel(hours) {{
       const numericHours = Number(hours);
       if (numericHours === 168) {{
@@ -4882,31 +4844,24 @@ def build_html(
         hazard: '<path d="m12 4 8 16H4L12 4Z"/><path d="M12 9v5m0 3h.01"/>',
         closure: '<path d="M4 5h16v12H4zM6 5l6 12m1-12 6 12M7 17v3m10-3v3"/>',
         fire: '<path d="M12 20c3.4 0 6-2.3 6-5.6 0-2.5-1.3-4.2-2.5-5.7.2 2.1-.9 3.5-2 4.1.2-3.4-1.3-6.5-4-8.8.3 3.5-3.5 6.2-3.5 10.4C6 17.7 8.6 20 12 20Z"/>',
-        medical: '<rect x="3" y="3" width="18" height="18" rx="3" fill="#fff" stroke="none"/><path d="M10 5h4v5h5v4h-5v5h-4v-5H5v-4h5Z" fill="#c63735" stroke="none"/>',
+        medical: '<path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6Z" fill="currentColor" stroke="none"/>',
         roadwork: '<path d="m9 4-5 16m11-16 5 16M6 15h12M4 20h16"/>',
         other: '<circle cx="12" cy="12" r="8"/><path d="M9 9a3 3 0 1 1 4 3c-1 .6-1 1.2-1 2m0 3h.01"/>'
       }};
       const glyph = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${{symbols[category]}}</svg>`;
       const markerState = incident.status === "active" ? "is-active" : incident.status === "reported" ? "is-reported" : "is-cleared";
-      const sourceStatus = String(incident.source_status || "").toLowerCase();
-      const visualAge = wildWebReportedVisualAge(incident);
-      const wildwebEndState = String(incident.source || "").toLowerCase() === "wildweb" && markerState === "is-cleared"
-        ? {{ aged_out: "is-wildweb-aged-out", no_longer_listed: "is-wildweb-no-longer-listed" }}[sourceStatus] || ""
-        : "";
       const size = 44; // A 36px visible badge inside a generous touch target.
       return L.divIcon({{
         className: [
           "incident-marker",
           `is-${{category}}`,
           markerState,
-          visualAge ? "is-wildweb-aging" : "",
-          wildwebEndState,
           selected ? "is-selected" : "",
           pulsing ? "is-pulsing" : ""
         ].join(" "),
         iconSize: [size, size],
         iconAnchor: [size / 2, size / 2],
-        html: `<span class="incident-marker-dot" aria-hidden="true"${{visualAge ? ` style="--incident-age-saturation: ${{visualAge.saturation.toFixed(3)}}"` : ""}}><span class="incident-marker-core">${{glyph}}</span></span>`
+        html: `<span class="incident-marker-dot" aria-hidden="true"><span class="incident-marker-core">${{glyph}}</span></span>`
       }});
     }}
 
@@ -6030,7 +5985,6 @@ def build_html(
         const statusText = incidentStatusLabel(incident);
         const sourceText = incidentSourceLabel(incident);
         const locationLines = incidentLocationLines(incident);
-        const visualAge = wildWebReportedVisualAge(incident);
         const linkedOutsideWindow = Boolean(incident._linked_outside_window);
         if (hasCoords) {{
           const marker = L.marker([incident.latitude, incident.longitude], {{
@@ -6044,12 +5998,9 @@ def build_html(
         }}
 
         const button = document.createElement("button");
-        button.className = visualAge ? "incident is-wildweb-aging" : "incident";
+        button.className = "incident";
         button.type = "button";
         button.dataset.eventKey = incident.event_key;
-        if (visualAge) {{
-          button.style.setProperty("--incident-age-saturation", visualAge.saturation.toFixed(3));
-        }}
         button.innerHTML = `
           <span class="incident-heading">
             <span class="status-pill ${{statusClass}}">${{statusText}}</span>
@@ -7598,7 +7549,7 @@ def build_about_html(
         <div class="result"><strong>Active incident details</strong><span>Unchanged active incidents are refreshed about every 3 minutes.</span></div>
         <div class="result"><strong>Air temperature</strong><span>Checked about every 15 minutes while the temperature layer is enabled and the page is visible. Also checked when you return to the tab or reconnect. Weather responses may be reused for up to 15 minutes; station observation times and forecast validity times can be earlier than the check time.</span></div>
         <div class="result"><strong>Road-weather forecasts and NWS alerts</strong><span>Checked together about every 15 minutes while the road-weather layer is enabled and the page is visible. Also checked when you return to the tab or reconnect. Responses may be reused for up to 15 minutes. Forecasts cover the next six hours.</span></div>
-        <div class="result"><strong>Status meaning</strong><span>CHP records use Active and Cleared. WildWeb records say Reported unless the source explicitly provides Contained, Controlled, or Out. No longer listed and Archived do not mean Crestmap independently confirmed the incident is over. Both use gray map dots; aged-out reports have a muted brown ring while reports removed from WildWeb have a slate ring.</span></div>
+        <div class="result"><strong>Status meaning</strong><span>CHP records use Active and Cleared. WildWeb records say Reported unless the source explicitly provides Contained, Controlled, or Out. No longer listed and Archived do not mean Crestmap independently confirmed the incident is over. Map badges use red for active, amber for reported, and gray for cleared or archived; the pictograph shows the incident type.</span></div>
         <div class="result"><strong>History</strong><span>Cleared and archived records stay in the database and are shown when they fall inside the selected time window.</span></div>
       </section>
       <section class="section" id="push-notifications">

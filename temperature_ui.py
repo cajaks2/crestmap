@@ -113,6 +113,9 @@ TEMPERATURE_JS = r"""
       let inFlight = false;
       let state = "idle";
       let frame = null;
+      let retryTimer = null;
+      let retryCountdown = null;
+      let retryBlockedUntil = 0;
       const previousPlacements = new Map();
       const button = document.querySelector("[data-temperature-layer-toggle]");
       if (!button) return;
@@ -123,9 +126,12 @@ TEMPERATURE_JS = r"""
       loadStatus.innerHTML = '<span class="temperature-load-spinner" aria-hidden="true"></span><span></span>';
       map.getContainer().appendChild(loadStatus);
       L.DomEvent.disableClickPropagation(loadStatus);
-      loadStatus.addEventListener("click", () => { if (state === "error") refresh(); });
+      loadStatus.addEventListener("click", () => {
+        if (state === "error" && !loadStatus.disabled) refresh();
+      });
       button.addEventListener("click", () => {
         enabled = !enabled;
+        if (!enabled) clearRetry();
         try { localStorage.setItem("crestmap-temperature", enabled ? "shown" : "hidden"); } catch (_) {}
         updateButton();
         renderTemperatures();
@@ -135,7 +141,7 @@ TEMPERATURE_JS = r"""
         button.setAttribute("aria-pressed", String(enabled));
         button.classList.toggle("is-active", enabled);
         button.querySelector(".view-menu-description").textContent = !enabled ? "Hidden from map"
-          : state === "loading" ? "Loading estimates…" : state === "error" ? "Estimates unavailable · retry by toggling"
+          : state === "loading" ? "Loading estimates…" : state === "error" ? "Estimates unavailable · retrying automatically"
           : "Roads + terrain highs/lows · more detail as you zoom";
         button.title = `${enabled ? "Hide" : "Show"} estimated air temperatures`;
         updateLoadStatus();
@@ -143,11 +149,31 @@ TEMPERATURE_JS = r"""
       function updateLoadStatus() {
         const initialLoading = enabled && state === "loading" && !points.length;
         const initialError = enabled && state === "error" && !points.length;
+        const waitSeconds = Math.max(0, Math.ceil((retryBlockedUntil - Date.now()) / 1000));
         loadStatus.classList.toggle("is-visible", initialLoading || initialError);
         loadStatus.classList.toggle("is-error", initialError);
-        loadStatus.disabled = !initialError;
+        loadStatus.disabled = !initialError || waitSeconds > 0 || !navigator.onLine;
         loadStatus.querySelector("span:last-child").textContent = initialError
-          ? "Temperatures unavailable · Tap to retry" : "Loading temperatures…";
+          ? !navigator.onLine ? "Offline · retrying when connected"
+            : waitSeconds ? `Temperatures unavailable · Retrying in ${waitSeconds}s`
+            : "Temperatures unavailable · Tap to retry"
+          : "Loading temperatures…";
+      }
+      function clearRetry() {
+        if (retryTimer !== null) window.clearTimeout(retryTimer);
+        if (retryCountdown !== null) window.clearInterval(retryCountdown);
+        retryTimer = null;
+        retryCountdown = null;
+        retryBlockedUntil = 0;
+      }
+      function scheduleRetry(seconds, serverBackoff) {
+        clearRetry();
+        if (!enabled || !navigator.onLine) return;
+        const delay = Math.max(1, seconds) * 1000;
+        if (serverBackoff) retryBlockedUntil = Date.now() + delay;
+        retryTimer = window.setTimeout(() => { clearRetry(); refresh(); }, delay);
+        if (serverBackoff) retryCountdown = window.setInterval(updateLoadStatus, 1000);
+        updateButton();
       }
       function fresh(point) {
         const age = Date.now() - Date.parse(point.valid_at);
@@ -295,12 +321,33 @@ TEMPERATURE_JS = r"""
       }
       async function refresh() {
         if (!enabled || inFlight || document.hidden) return;
+        clearRetry();
+        if (!navigator.onLine) {
+          points = [];
+          state = "error";
+          updateButton();
+          renderTemperatures();
+          return;
+        }
         inFlight = true;
         state = "loading";
         updateButton();
+        let retryAfter = 0;
         try {
-          const response = await fetch(`${temperatureEndpoint}?region=${encodeURIComponent(currentRegion)}`, {signal: AbortSignal.timeout(12000)});
-          if (!response.ok) throw new Error("unavailable");
+          const controller = new AbortController();
+          const timeout = window.setTimeout(() => controller.abort(), 30000);
+          let response;
+          try {
+            response = await fetch(`${temperatureEndpoint}?region=${encodeURIComponent(currentRegion)}`, {
+              signal: controller.signal, cache: "no-store"
+            });
+          } finally {
+            window.clearTimeout(timeout);
+          }
+          if (!response.ok) {
+            if (response.status === 503) retryAfter = Math.min(120, Math.max(1, Number(response.headers.get("Retry-After")) || 60));
+            throw new Error("unavailable");
+          }
           const data = await response.json();
           if (data.region !== currentRegion || !Array.isArray(data.points)) throw new Error("invalid data");
           points = data.points.filter(p => ["estimate", "observation"].includes(p.kind) && Number.isFinite(p.temperature_f) && Number.isFinite(p.elevation_m) && Number.isFinite(p.latitude) && Number.isFinite(p.longitude) && fresh(p));
@@ -312,6 +359,7 @@ TEMPERATURE_JS = r"""
           inFlight = false;
           updateButton();
           renderTemperatures();
+          if (state === "error") scheduleRetry(retryAfter || 10, Boolean(retryAfter));
         }
       }
       map.on("moveend zoomend resize workspacechange", scheduleRender);
@@ -319,7 +367,7 @@ TEMPERATURE_JS = r"""
         if (event.layer instanceof L.Marker && event.layer.options.pane !== "temperatures") scheduleRender();
       });
       document.addEventListener("visibilitychange", () => { if (!document.hidden) { renderTemperatures(); refresh(); } });
-      window.addEventListener("online", refresh);
+      window.addEventListener("online", () => { clearRetry(); refresh(); });
       window.setInterval(refresh, 15 * 60 * 1000);
       window.setInterval(() => {
         if (points.some(point => !fresh(point))) {

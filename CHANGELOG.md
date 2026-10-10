@@ -11,6 +11,14 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.308 - 2026-10-10
+
+- Keep incident pictographs fully opaque and use only the badge's status palette;
+  medical crosses now follow the same active, reported, and cleared colors.
+- Let temperature requests finish on slower connections and show the provider's
+  retry wait before automatically trying again. Manual retry remains available
+  for connection failures.
+
 ### 0.1.307 - 2026-10-08
 
 - Center selected incident badges and replace the leftover circular keyboard

@@ -265,6 +265,7 @@ def test_failure_backoff_and_no_secret_error(monkeypatch):
         with pytest.raises(weather.TemperatureUnavailable) as exc:
             weather.load_temperatures("forest")
         assert "secret" not in str(exc.value)
+        assert 1 <= exc.value.retry_after <= 60
     assert len(calls) == 1
 
 
@@ -279,9 +280,11 @@ def test_endpoint_and_local_render(tmp_path, monkeypatch, region):
         assert response.headers["Cache-Control"] == "public, max-age=60"
         assert client.head(f"/map/api/v1/temperature?region={region}").content == b""
         def fail(_):
-            raise weather.TemperatureUnavailable()
+            raise weather.TemperatureUnavailable(42)
         monkeypatch.setattr(app, "load_temperatures", fail)
-        assert client.get("/api/v1/temperature").status_code == 503
+        failed = client.get("/api/v1/temperature")
+        assert failed.status_code == 503
+        assert failed.headers["Retry-After"] == "42"
     rendered = build_html([], "2026-09-04T12:00:00-07:00", 72, region=region, base_path="/map")
     assert 'const temperatureEndpoint = "/map/api/v1/temperature"' in rendered
     assert "__TEMPERATURE_ENDPOINT__" not in rendered
@@ -313,6 +316,10 @@ def test_endpoint_and_local_render(tmp_path, monkeypatch, region):
     assert "Roads + terrain highs/lows" in rendered
     assert "Loading temperatures…" in rendered
     assert "Temperatures unavailable · Tap to retry" in rendered
+    assert "Retrying in ${waitSeconds}s" in rendered
+    assert "scheduleRetry(retryAfter || 10, Boolean(retryAfter))" in rendered
+    assert "controller.abort(), 30000" in rendered
+    assert 'cache: "no-store"' in rendered
     assert "left: 50%; top: 54px" in rendered
     assert 'state === "loading" && !points.length' in rendered
     assert "transform: translateX(-50%)" in rendered

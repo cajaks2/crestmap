@@ -44,6 +44,77 @@ def test_temperature_labels_stay_close_to_coordinate_and_declutter_overlaps():
     """)
 
 
+def test_temperature_retry_respects_server_backoff_and_recovers():
+    script = TEMPERATURE_JS.replace("__TEMPERATURE_ENDPOINT__", json.dumps("/api/v1/temperature"))
+    harness = r"""
+      const assert = require('node:assert/strict');
+      const vm = require('node:vm');
+      const timers = new Map(), intervals = new Map();
+      let nextTimer = 1, requests = 0, retryClick = null;
+      const statusText = {textContent: ''};
+      const description = {textContent: ''};
+      const loadStatus = {
+        classList: {toggle() {}}, setAttribute() {},
+        addEventListener(type, fn) {if (type === 'click') retryClick = fn;},
+        querySelector() {return statusText;}, disabled: true
+      };
+      const button = {
+        classList: {toggle() {}}, setAttribute() {}, addEventListener() {},
+        querySelector() {return description;}
+      };
+      const context = {
+        L: {layerGroup: () => ({addTo() {return this;}, clearLayers() {}}),
+          DomEvent: {disableClickPropagation() {}}},
+        map: {createPane: () => ({style: {}}), getContainer: () => ({
+          appendChild() {}, getBoundingClientRect() {return {left: 0, top: 0};},
+          querySelectorAll() {return [];}
+        }), on() {}},
+        markers: new Map(), cameraMarkers: new Map(), aircraftMarkers: new Map(),
+        currentRegion: 'forest', document: {hidden: false, createElement: () => loadStatus,
+          querySelector: () => button, addEventListener() {}},
+        navigator: {onLine: true}, localStorage: {getItem: () => null},
+        window: {chpLiveMap: {}, addEventListener() {},
+          setTimeout(fn, delay) {const id = nextTimer++; timers.set(id, {fn, delay}); return id;},
+          clearTimeout(id) {timers.delete(id);},
+          setInterval(fn, delay) {const id = nextTimer++; intervals.set(id, {fn, delay}); return id;},
+          clearInterval(id) {intervals.delete(id);}},
+        fetch: async () => {
+          requests++;
+          if (requests === 1) return {ok: false, status: 503, headers: {get: () => '2'}};
+          if (requests === 3) throw new Error('network lost');
+          return {ok: true, json: async () => ({region: 'forest', points: [{kind: 'estimate',
+            temperature_f: 70, elevation_m: 1000, latitude: 34.3, longitude: -118.1,
+            valid_at: new Date().toISOString()}]})};
+        },
+        AbortController, Date, Number, Math, Map, Array, String, JSON,
+      };
+    """
+    run_js(harness + "vm.runInNewContext(" + json.dumps(script) + """, context);
+      (async () => {
+        await new Promise(setImmediate);
+        assert.equal(requests, 1);
+        assert.equal(loadStatus.disabled, true);
+        assert.match(statusText.textContent, /Retrying in [12]s/);
+        const retry = [...timers.values()].find(timer => timer.delay === 2000);
+        assert.ok(retry, 'server backoff schedules a new request');
+        retry.fn();
+        await new Promise(setImmediate);
+        assert.equal(requests, 2);
+        assert.equal(description.textContent, 'Roads + terrain highs/lows · more detail as you zoom');
+        const periodic = [...intervals.values()].find(timer => timer.delay === 15 * 60 * 1000);
+        periodic.fn();
+        await new Promise(setImmediate);
+        assert.equal(requests, 3);
+        assert.equal(loadStatus.disabled, false);
+        assert.equal(statusText.textContent, 'Temperatures unavailable · Tap to retry');
+        retryClick();
+        await new Promise(setImmediate);
+        assert.equal(requests, 4);
+        assert.equal(description.textContent, 'Roads + terrain highs/lows · more detail as you zoom');
+      })().catch(error => {console.error(error); process.exitCode = 1;});
+    """)
+
+
 @pytest.mark.parametrize("region", ["forest", "malibu"])
 def test_rendered_scripts_parse_and_sheet_preserves_full_record(region):
     html = build_html([], "2026-09-10T12:00:00-07:00", 72, region=region)
