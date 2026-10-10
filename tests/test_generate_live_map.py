@@ -183,7 +183,7 @@ def test_build_html_labels_wildweb_report_without_claiming_it_is_active_or_clear
     assert "wildWebReportedVisualAge" not in html
     assert "--incident-age-saturation" not in html
     assert 'button.className = "incident"' in html
-    assert 'medical: \'<path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6Z" fill="currentColor"' in html
+    assert '"medical":"<path d=\\"M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6Z\\" fill=\\"currentColor\\"' in html
     assert 'fill="#c63735"' not in html
     assert ".incident-marker.is-cleared .incident-marker-core" in html
     assert "opacity: 0.88;" not in html
@@ -962,7 +962,7 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "updateWhenZooming: !compactMapRendering" in html
     assert "function markerIcon" in html
     assert 'const category = /collision|hit and run|motor vehicle accident|fatality/' in html
-    assert 'fire: \'<path d="M12 20c3.4 0 6-2.3 6-5.6' in html
+    assert '"fire":"<path d=\\"M12 20c3.4 0 6-2.3 6-5.6' in html
     assert 'fill="#c63735"' not in html
     assert 'width: 36px;' in html
     assert 'width: 26px;' in html

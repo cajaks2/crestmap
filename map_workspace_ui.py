@@ -26,7 +26,7 @@ MAP_WORKSPACE_CSS = """
     #incident-search-clear { position: absolute; top: 3px; right: 3px; width: 34px; height: 34px; padding: 0;
       border: 0; background: transparent; color: #496052; font-size: 20px; cursor: pointer; }
     #incident-search-status { display: block; min-height: 15px; margin-top: 4px; color: #647067; font-size: 11px; }
-    #map .map-layer-menu summary { display: flex; width: auto; min-width: 76px; min-height: 44px; gap: 6px; padding: 0 10px; white-space: nowrap; }
+    #map .map-layer-menu > summary { display: flex; width: auto; min-width: 76px; min-height: 44px; gap: 6px; padding: 0 10px; white-space: nowrap; }
     .map-layer-label { font: 600 12px/1.3 -apple-system, BlinkMacSystemFont, sans-serif; }
     @media (max-width: 1000px) {
       html, body { overflow: hidden; }

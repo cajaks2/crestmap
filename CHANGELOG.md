@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.309 - 2026-10-10
+
+- Add an expandable icon and color key to the map Layers menu, showing all
+  incident pictographs and explaining active, reported, and cleared or archived
+  badge colors. The key shares icon artwork with the map markers.
+
 ### 0.1.308 - 2026-10-10
 
 - Keep incident pictographs fully opaque and use only the badge's status palette;

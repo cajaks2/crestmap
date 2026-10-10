@@ -1073,6 +1073,45 @@ def view_menu(base_path, current, hours, region="forest", admin_mode=False, airc
     )
 
 
+INCIDENT_MARKER_SYMBOLS = {
+    "collision": '<path d="M2.5 13h5l2 2v2.5h-7V13Zm19-6h-5l-2 2v2.5h7V7Z"/><circle cx="4.5" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="19.5" cy="13" r="1" fill="currentColor" stroke="none"/><path d="m12 8 .9 2.6 2.6.9-2.6.9L12 15l-.9-2.6-2.6-.9 2.6-.9Z" fill="currentColor" stroke="none"/>',
+    "hazard": '<path d="m12 4 8 16H4L12 4Z"/><path d="M12 9v5m0 3h.01"/>',
+    "closure": '<path d="M4 5h16v12H4zM6 5l6 12m1-12 6 12M7 17v3m10-3v3"/>',
+    "fire": '<path d="M12 20c3.4 0 6-2.3 6-5.6 0-2.5-1.3-4.2-2.5-5.7.2 2.1-.9 3.5-2 4.1.2-3.4-1.3-6.5-4-8.8.3 3.5-3.5 6.2-3.5 10.4C6 17.7 8.6 20 12 20Z"/>',
+    "medical": '<path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6Z" fill="currentColor" stroke="none"/>',
+    "roadwork": '<path d="m9 4-5 16m11-16 5 16M6 15h12M4 20h16"/>',
+    "other": '<circle cx="12" cy="12" r="8"/><path d="M9 9a3 3 0 1 1 4 3c-1 .6-1 1.2-1 2m0 3h.01"/>',
+}
+
+
+def incident_marker_key():
+    icon_labels = (
+        ("collision", "Crash"), ("hazard", "Hazard"),
+        ("closure", "Closure"), ("fire", "Fire"),
+        ("medical", "Medical aid"), ("roadwork", "Roadwork"),
+        ("other", "Other"),
+    )
+    icons = "".join(
+        '<span class="map-key-icon-item"><span class="map-key-icon" aria-hidden="true">'
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" '
+        'stroke-linecap="round" stroke-linejoin="round">{}</svg></span>{}</span>'.format(
+            INCIDENT_MARKER_SYMBOLS[kind], label
+        )
+        for kind, label in icon_labels
+    )
+    return (
+        '<details class="map-incident-key"><summary aria-label="Icon and color key">Icon &amp; color key</summary>'
+        '<div class="map-key-content"><p>Shape shows incident type</p>'
+        f'<div class="map-key-icons">{icons}</div>'
+        '<p>Color shows status</p><div class="map-key-statuses">'
+        '<span><i class="map-key-swatch is-active" aria-hidden="true"></i>Active CHP</span>'
+        '<span><i class="map-key-swatch is-reported" aria-hidden="true"></i>Reported WildWeb</span>'
+        '<span><i class="map-key-swatch is-cleared" aria-hidden="true"></i>Cleared / archived</span>'
+        '</div><small>Archived reports may simply be no longer listed; their resolution is unconfirmed.</small>'
+        '</div></details>'
+    )
+
+
 def map_layer_menu(region="forest", aircraft_tracking_enabled=False):
     rows = [
         '<button type="button" class="view-menu-row is-active" data-incident-layer-toggle aria-label="Toggle incidents" '
@@ -1107,6 +1146,7 @@ def map_layer_menu(region="forest", aircraft_tracking_enabled=False):
         '<path d="M4 7h16M4 12h16M4 17h16"></path></svg><span class="map-layer-label">Layers</span></summary>'
         '<div class="map-layer-popover"><div class="map-layer-heading">'
         '<strong>Map layers</strong><span>Controls that only affect the map</span></div>'
+        + incident_marker_key()
         + "".join(rows)
         + '</div></details>'
     )
@@ -2331,25 +2371,52 @@ def build_html(
     .map-layer-menu {{
       position: absolute; top: 12px; left: 12px; z-index: 1001;
     }}
-    .map-layer-menu summary {{
+    .map-layer-menu > summary {{
       box-sizing: border-box; display: grid; place-items: center; width: 36px; height: 36px;
       padding: 0; border: 1px solid rgba(42,57,47,.25); border-radius: 9px;
       color: #385142; background: rgba(255,255,255,.96); box-shadow: 0 2px 8px rgba(24,32,38,.16);
       cursor: pointer; list-style: none;
     }}
-    .map-layer-menu summary::-webkit-details-marker {{ display: none; }}
-    .map-layer-menu[open] summary {{ color: #fff; border-color: #277447; background: #277447; }}
-    .map-layer-menu summary:focus-visible {{ outline: 2px solid rgba(39,116,71,.55); outline-offset: 2px; }}
-    .map-layer-menu summary svg {{ width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }}
+    .map-layer-menu > summary::-webkit-details-marker {{ display: none; }}
+    .map-layer-menu[open] > summary {{ color: #fff; border-color: #277447; background: #277447; }}
+    .map-layer-menu > summary:focus-visible {{ outline: 2px solid rgba(39,116,71,.55); outline-offset: 2px; }}
+    .map-layer-menu > summary svg {{ width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }}
     .map-layer-popover {{
       position: absolute; top: 42px; left: 0; width: min(276px, calc(100vw - 80px)); overflow: hidden;
       border: 1px solid rgba(56,74,62,.22); border-radius: 13px; background: rgba(251,252,248,.98);
       box-shadow: 0 8px 24px rgba(24,32,38,.2); color: #344239;
+      max-height: min(75dvh, 640px); overflow-y: auto; overscroll-behavior: contain;
     }}
     .map-layer-heading {{ padding: 11px 13px 9px; border-bottom: 1px solid #d8ddd2; }}
     .map-layer-heading strong, .map-layer-heading span {{ display: block; }}
     .map-layer-heading strong {{ font-size: 14px; }}
     .map-layer-heading span {{ margin-top: 2px; color: #687268; font-size: 10px; }}
+    .map-incident-key {{ border-bottom: 1px solid #d8ddd2; }}
+    .map-incident-key > summary {{
+      display: flex; align-items: center; justify-content: space-between; min-height: 44px;
+      padding: 0 13px; color: #294d37; background: #f4f7ef; cursor: pointer;
+      font-size: 12px; font-weight: 800; list-style: none;
+    }}
+    .map-incident-key > summary::-webkit-details-marker {{ display: none; }}
+    .map-incident-key > summary::after {{ content: "⌄"; font-size: 18px; line-height: 1; }}
+    .map-incident-key[open] > summary::after {{ transform: rotate(180deg); }}
+    .map-incident-key > summary:focus-visible {{ outline: 2px solid #277447; outline-offset: -3px; }}
+    .map-key-content {{ padding: 1px 13px 12px; background: #fff; }}
+    .map-key-content p {{ margin: 10px 0 7px; color: #526159; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }}
+    .map-key-icons {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 5px; }}
+    .map-key-icon-item {{ display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 11px; font-weight: 650; }}
+    .map-key-icon {{
+      box-sizing: border-box; display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px;
+      border: 1.5px solid #839189; border-radius: 6px; color: #344d3d; background: #f5f7f1;
+    }}
+    .map-key-icon svg {{ display: block; width: 21px; height: 21px; }}
+    .map-key-statuses {{ display: grid; gap: 7px; }}
+    .map-key-statuses > span {{ display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 650; }}
+    .map-key-swatch {{ box-sizing: border-box; flex: 0 0 20px; width: 20px; height: 20px; border: 2px solid; border-radius: 5px; }}
+    .map-key-swatch.is-active {{ border-color: #923223; background: #c94c39; }}
+    .map-key-swatch.is-reported {{ border-color: #9a671b; background: #e6b14c; }}
+    .map-key-swatch.is-cleared {{ border-color: #839189; background: #f5f7f1; }}
+    .map-key-content small {{ display: block; margin-top: 8px; color: #687268; font-size: 10px; line-height: 1.35; }}
     .map-layer-popover .view-menu-row {{
       min-height: 48px; border-radius: 0; border: 0; border-bottom: 1px solid #e1e5dc; box-shadow: none;
     }}
@@ -4839,15 +4906,7 @@ def build_html(
         : /wildfire|fire/.test(label) ? "fire"
         : /medical|med aid/.test(label) ? "medical"
         : /maintenance|roadwork|construction/.test(label) ? "roadwork" : "other";
-      const symbols = {{
-        collision: '<path d="M2.5 13h5l2 2v2.5h-7V13Zm19-6h-5l-2 2v2.5h7V7Z"/><circle cx="4.5" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="19.5" cy="13" r="1" fill="currentColor" stroke="none"/><path d="m12 8 .9 2.6 2.6.9-2.6.9L12 15l-.9-2.6-2.6-.9 2.6-.9Z" fill="currentColor" stroke="none"/>',
-        hazard: '<path d="m12 4 8 16H4L12 4Z"/><path d="M12 9v5m0 3h.01"/>',
-        closure: '<path d="M4 5h16v12H4zM6 5l6 12m1-12 6 12M7 17v3m10-3v3"/>',
-        fire: '<path d="M12 20c3.4 0 6-2.3 6-5.6 0-2.5-1.3-4.2-2.5-5.7.2 2.1-.9 3.5-2 4.1.2-3.4-1.3-6.5-4-8.8.3 3.5-3.5 6.2-3.5 10.4C6 17.7 8.6 20 12 20Z"/>',
-        medical: '<path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6Z" fill="currentColor" stroke="none"/>',
-        roadwork: '<path d="m9 4-5 16m11-16 5 16M6 15h12M4 20h16"/>',
-        other: '<circle cx="12" cy="12" r="8"/><path d="M9 9a3 3 0 1 1 4 3c-1 .6-1 1.2-1 2m0 3h.01"/>'
-      }};
+      const symbols = {json.dumps(INCIDENT_MARKER_SYMBOLS, separators=(',', ':'))};
       const glyph = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${{symbols[category]}}</svg>`;
       const markerState = incident.status === "active" ? "is-active" : incident.status === "reported" ? "is-reported" : "is-cleared";
       const size = 44; // A 36px visible badge inside a generous touch target.

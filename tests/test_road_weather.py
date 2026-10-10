@@ -142,6 +142,12 @@ def test_endpoint_and_map_layer_menu(tmp_path, monkeypatch):
         assert response.headers["Cache-Control"] == "public, max-age=60"
     rendered = build_html([], "2026-09-06T10:00:00-07:00", 72, region="forest", base_path="/map")
     assert 'class="map-layer-menu"' in rendered
+    assert '<details class="map-incident-key"><summary aria-label="Icon and color key">Icon &amp; color key</summary>' in rendered
+    for label in ("Crash", "Hazard", "Closure", "Fire", "Medical aid", "Roadwork", "Other"):
+        assert f"</span>{label}</span>" in rendered
+    for label in ("Active CHP", "Reported WildWeb", "Cleared / archived"):
+        assert label in rendered
+    assert "Archived reports may simply be no longer listed" in rendered
     assert 'data-road-weather-layer-toggle' in rendered
     assert 'const endpoint = "/map/api/v1/road-weather"' in rendered
     assert "Rain · snow · ice by elevation" in rendered
