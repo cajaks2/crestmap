@@ -4024,6 +4024,13 @@ def build_html(
     function setupMapLayerMenu() {{
       const menu = document.querySelector(".map-layer-menu");
       if (!menu) return;
+      // Keep gestures that start in the menu out of Leaflet while preserving
+      // the popover's native touch scrolling and its button/summary clicks.
+      L.DomEvent.disableClickPropagation(menu);
+      L.DomEvent.disableScrollPropagation(menu);
+      for (const name of ["pointerdown", "pointermove", "touchmove"]) {{
+        menu.addEventListener(name, L.DomEvent.stopPropagation, {{ passive: true }});
+      }}
       document.addEventListener("pointerdown", (event) => {{
         if (menu.open && !menu.contains(event.target)) menu.removeAttribute("open");
       }}, true);

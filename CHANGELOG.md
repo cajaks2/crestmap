@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.311 - 2026-10-10
+
+- Keep touch and wheel scrolling inside the Layers menu from moving or zooming
+  the map beneath it.
+
 ### 0.1.310 - 2026-10-10
 
 - Replace the roadwork barrier pictograph with a bulldozer in map markers and
