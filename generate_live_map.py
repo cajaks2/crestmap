@@ -1079,7 +1079,7 @@ INCIDENT_MARKER_SYMBOLS = {
     "closure": '<path d="M4 5h16v12H4zM6 5l6 12m1-12 6 12M7 17v3m10-3v3"/>',
     "fire": '<path d="M12 20c3.4 0 6-2.3 6-5.6 0-2.5-1.3-4.2-2.5-5.7.2 2.1-.9 3.5-2 4.1.2-3.4-1.3-6.5-4-8.8.3 3.5-3.5 6.2-3.5 10.4C6 17.7 8.6 20 12 20Z"/>',
     "medical": '<path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6Z" fill="currentColor" stroke="none"/>',
-    "roadwork": '<path d="m9 4-5 16m11-16 5 16M6 15h12M4 20h16"/>',
+    "roadwork": '<path d="M7 5h6l3 7H7V5ZM3 13h14v3H3zM5 18h11M18 12h3v7h-3"/>',
     "other": '<circle cx="12" cy="12" r="8"/><path d="M9 9a3 3 0 1 1 4 3c-1 .6-1 1.2-1 2m0 3h.01"/>',
 }
 

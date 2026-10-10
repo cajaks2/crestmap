@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.310 - 2026-10-10
+
+- Replace the roadwork barrier pictograph with a bulldozer in map markers and
+  the Layers menu key.
+
 ### 0.1.309 - 2026-10-10
 
 - Add an expandable icon and color key to the map Layers menu, showing all
