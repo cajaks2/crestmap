@@ -11,6 +11,8 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.315 - 2026-10-12
+
 - Replace the crash pictograph with a tilted front-view vehicle and impact burst,
   matching the map marker and icon key.
 
