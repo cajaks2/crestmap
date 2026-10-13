@@ -11,6 +11,10 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.313 - 2026-10-12
+
+- Raise the mobile incident-list button another 14 pixels above the bottom edge.
+
 ### 0.1.312 - 2026-10-12
 
 - Raise the mobile incident-list button slightly above the bottom edge and make
