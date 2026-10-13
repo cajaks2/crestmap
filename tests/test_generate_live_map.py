@@ -961,7 +961,13 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "updateWhenIdle: compactMapRendering" in html
     assert "updateWhenZooming: !compactMapRendering" in html
     assert "function markerIcon" in html
-    assert 'const category = /collision|hit and run|motor vehicle accident|fatality/' in html
+    assert 'label.includes("1144-fatality") ? "fatality"' in html
+    assert ': /collision|hit and run|motor vehicle accident|fatality/.test(label) ? "collision"' in html
+    assert 'is-${category}' in html
+    assert '"fatality":"<path d=\\"M12 2.5 20.5 7v10L12 21.5 3.5 17V7Z\\" stroke-width=\\"1.8\\"/>' in html
+    assert 'M9 17V7.5h6.5M9 12h5.5\\" stroke-width=\\"3.2\\"' in html
+    assert '<span class="map-key-icon-item">' in html
+    assert 'Fatality</span>' in html
     assert '"fire":"<path d=\\"M12 20c3.4 0 6-2.3 6-5.6' in html
     assert 'fill="#c63735"' not in html
     assert 'width: 36px;' in html

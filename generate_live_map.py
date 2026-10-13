@@ -1083,6 +1083,10 @@ INCIDENT_MARKER_SYMBOLS = {
         '</g><path d="M6 21h13" stroke-width="2"/>'
         '<path d="m18 3 1.2 2.3L22 4.2l-1 2.6L23 9l-3.2-.3-1.3 2.1-.1-3-2.2-1.5 2.1-.4Z" fill="currentColor" stroke="none"/>'
     ),
+    "fatality": (
+        '<path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7Z" stroke-width="1.8"/>'
+        '<path d="M9 17V7.5h6.5M9 12h5.5" stroke-width="3.2"/>'
+    ),
     "hazard": '<path d="m12 4 8 16H4L12 4Z"/><path d="M12 9v5m0 3h.01"/>',
     "closure": '<path d="M4 5h16v12H4zM6 5l6 12m1-12 6 12M7 17v3m10-3v3"/>',
     "fire": '<path d="M12 20c3.4 0 6-2.3 6-5.6 0-2.5-1.3-4.2-2.5-5.7.2 2.1-.9 3.5-2 4.1.2-3.4-1.3-6.5-4-8.8.3 3.5-3.5 6.2-3.5 10.4C6 17.7 8.6 20 12 20Z"/>',
@@ -1094,7 +1098,7 @@ INCIDENT_MARKER_SYMBOLS = {
 
 def incident_marker_key():
     icon_labels = (
-        ("collision", "Crash"), ("hazard", "Hazard"),
+        ("collision", "Crash"), ("fatality", "Fatality"), ("hazard", "Hazard"),
         ("closure", "Closure"), ("fire", "Fire"),
         ("medical", "Medical aid"), ("roadwork", "Roadwork"),
         ("other", "Other"),
@@ -4919,7 +4923,8 @@ def build_html(
 
     function markerIcon(incident, selected = false, pulsing = false) {{
       const label = String(incident.type || "").toLowerCase();
-      const category = /collision|hit and run|motor vehicle accident|fatality/.test(label) ? "collision"
+      const category = label.includes("1144-fatality") ? "fatality"
+        : /collision|hit and run|motor vehicle accident|fatality/.test(label) ? "collision"
         : /hazard|debris|animal|tree|rock|flood/.test(label) ? "hazard"
         : /closure|closed|weather|snow|chain control/.test(label) ? "closure"
         : /wildfire|fire/.test(label) ? "fire"

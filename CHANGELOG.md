@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.317 - 2026-10-13
+
+- Give CHP `1144-Fatality` incidents a distinct F-in-hexagon map icon with a
+  stronger letter, and label it in the icon key while preserving status colors.
+
 ### 0.1.316 - 2026-10-13
 
 - Stack incident pins by status: active, reported, cleared, then archived;
