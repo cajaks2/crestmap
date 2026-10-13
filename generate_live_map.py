@@ -1074,7 +1074,15 @@ def view_menu(base_path, current, hours, region="forest", admin_mode=False, airc
 
 
 INCIDENT_MARKER_SYMBOLS = {
-    "collision": '<path d="M2 14v-4h2l1.5-3h3L10 10v4H2Zm20 0v-4h-2l-1.5-3h-3L14 10v4h8Z" stroke-width="2.2"/><path d="M4 17h4m8 0h4" stroke-width="2.2"/><path d="m12 8 .8 3.2L16 12l-3.2.8L12 16l-.8-3.2L8 12l3.2-.8Z" fill="currentColor" stroke="none"/>',
+    "collision": (
+        '<g transform="rotate(-12 11.5 13)">'
+        '<path d="M4.5 11.5 6 7.2C6.4 6.1 7.1 5.7 8.2 5.7h7.1c1.1 0 1.9.5 2.2 1.5l1.5 4.3v5.1c0 1.1-.8 1.9-1.9 1.9H6.4c-1.1 0-1.9-.8-1.9-1.9Z" fill="currentColor" stroke="none"/>'
+        '<path d="M7.4 10.8 8.5 7.7h6.6l1.1 3.1Z" fill="var(--incident-marker-surface)" stroke="none"/>'
+        '<circle cx="7.7" cy="14.9" r="1.3" fill="var(--incident-marker-surface)" stroke="none"/>'
+        '<circle cx="16.1" cy="14.9" r="1.3" fill="var(--incident-marker-surface)" stroke="none"/>'
+        '</g><path d="M6 21h13" stroke-width="2"/>'
+        '<path d="m18 3 1.2 2.3L22 4.2l-1 2.6L23 9l-3.2-.3-1.3 2.1-.1-3-2.2-1.5 2.1-.4Z" fill="currentColor" stroke="none"/>'
+    ),
     "hazard": '<path d="m12 4 8 16H4L12 4Z"/><path d="M12 9v5m0 3h.01"/>',
     "closure": '<path d="M4 5h16v12H4zM6 5l6 12m1-12 6 12M7 17v3m10-3v3"/>',
     "fire": '<path d="M12 20c3.4 0 6-2.3 6-5.6 0-2.5-1.3-4.2-2.5-5.7.2 2.1-.9 3.5-2 4.1.2-3.4-1.3-6.5-4-8.8.3 3.5-3.5 6.2-3.5 10.4C6 17.7 8.6 20 12 20Z"/>',
@@ -2406,6 +2414,7 @@ def build_html(
     .map-key-icons {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 5px; }}
     .map-key-icon-item {{ display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 11px; font-weight: 650; }}
     .map-key-icon {{
+      --incident-marker-surface: #f5f7f1;
       box-sizing: border-box; display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px;
       border: 1.5px solid #839189; border-radius: 6px; color: #344d3d; background: #f5f7f1;
     }}
@@ -2679,6 +2688,7 @@ def build_html(
       transform-origin: 50% 50%;
     }}
     .incident-marker-core {{
+      --incident-marker-surface: #c94c39;
       box-sizing: border-box;
       position: absolute;
       inset: 4px;
@@ -2699,11 +2709,13 @@ def build_html(
       height: 26px;
     }}
     .incident-marker.is-cleared .incident-marker-core {{
+      --incident-marker-surface: #f5f7f1;
       border-color: #839189;
       color: #526159;
       background: #f5f7f1;
     }}
     .incident-marker.is-reported .incident-marker-core {{
+      --incident-marker-surface: #e6b14c;
       border-color: #9a671b;
       color: #3d2b16;
       background: #e6b14c;
