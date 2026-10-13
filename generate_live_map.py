@@ -4943,6 +4943,14 @@ def build_html(
       }});
     }}
 
+    function incidentMarkerZIndexOffset(incident, selected = false) {{
+      if (selected) return 4000;
+      if (incident.status === "active") return 3000;
+      if (incident.status === "reported") return 2000;
+      if (incident.status === "cleared") return 1000;
+      return 0;
+    }}
+
     function normalizedBearing(value) {{
       const bearing = Number(value);
       return Number.isFinite(bearing) ? ((bearing % 360) + 360) % 360 : 0;
@@ -5218,7 +5226,10 @@ def build_html(
       document.querySelectorAll(".incident").forEach((button) => button.setAttribute("aria-current", "false"));
       markers.forEach((marker, eventKey) => {{
         const incident = incidents.find((item) => item.event_key === eventKey);
-        if (incident) marker.setIcon(markerIcon(incident));
+        if (incident) {{
+          marker.setIcon(markerIcon(incident));
+          marker.setZIndexOffset(incidentMarkerZIndexOffset(incident));
+        }}
       }});
       cameraMarkers.forEach((marker, cameraId) => {{
         const markerCamera = cameras.find((item) => item.id === cameraId);
@@ -5801,7 +5812,7 @@ def build_html(
           return;
         }}
         marker.setIcon(markerIcon(markerIncident, selected, selected && options.pulse));
-        marker.setZIndexOffset(selected ? 1000 : 0);
+        marker.setZIndexOffset(incidentMarkerZIndexOffset(markerIncident, selected));
         if (!incidentLayerVisible) {{
           if (eventKey === revealedIncidentKey) marker.addTo(map);
           else marker.remove();
@@ -5832,7 +5843,7 @@ def build_html(
           const incident = incidents.find(item => item.event_key === eventKey);
           if (!incident) return;
           marker.setIcon(markerIcon(incident));
-          marker.setZIndexOffset(0);
+          marker.setZIndexOffset(incidentMarkerZIndexOffset(incident));
           if (!incidentLayerVisible) marker.remove();
         }});
       }}
@@ -6067,6 +6078,7 @@ def build_html(
         if (hasCoords) {{
           const marker = L.marker([incident.latitude, incident.longitude], {{
             icon: markerIcon(incident),
+            zIndexOffset: incidentMarkerZIndexOffset(incident),
             keyboard: true,
             title: `${{incident.type || "Incident"}} ${{incident.location || ""}}`.trim()
           }});

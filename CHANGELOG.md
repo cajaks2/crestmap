@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.316 - 2026-10-13
+
+- Stack incident pins by status: active, reported, cleared, then archived;
+  selected pins remain above all other incidents.
+
 ### 0.1.315 - 2026-10-12
 
 - Replace the crash pictograph with a tilted front-view vehicle and impact burst,

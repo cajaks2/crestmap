@@ -868,7 +868,7 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "detailsPanel.dataset.selectedIncidentKey === incident.event_key" in html
     assert 'window.addEventListener("crestmap:detailclose"' in html
     assert "if (selectedCamera) clearCameraSelection();" in html
-    assert 'marker.setZIndexOffset(0)' in html
+    assert 'marker.setZIndexOffset(incidentMarkerZIndexOffset(incident))' in html
     assert '<label class="comment-field">' in html
     assert 'Contact <span class="comment-field-hint">(optional, not public)</span>' in html
     assert 'placeholder="Email or phone"' in html
