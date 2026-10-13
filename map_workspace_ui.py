@@ -79,7 +79,7 @@ MAP_WORKSPACE_CSS = """
       #incident-list { flex: 1; min-height: 0; height: auto; }
       #scroll-incidents, #scroll-incidents-top { z-index: 4; width: 44px; height: 36px; }
       #incident-search-shell { padding-top: 3px; }
-      .mobile-map-toolbar { display: flex; position: absolute; left: 50%; bottom: max(10px, env(safe-area-inset-bottom));
+      .mobile-map-toolbar { display: flex; position: absolute; left: 50%; bottom: max(18px, calc(env(safe-area-inset-bottom) + 8px));
         align-items: center; width: max-content; max-width: calc(100% - 24px); transform: translateX(-50%);
         z-index: 700; font-size: 12px; transition: opacity 160ms ease, transform 180ms ease; }
       #app[data-map-sheet="expanded"] .mobile-map-toolbar,
@@ -92,7 +92,7 @@ MAP_WORKSPACE_CSS = """
         border: 0; border-radius: 7px; background: transparent; color: #245939; font: inherit; cursor: pointer; }
       #map-list-toggle { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 8px 14px;
         border: 1px solid rgba(42,57,47,.25); border-radius: 10px; color: #294d37;
-        background: rgba(255,255,255,.96); box-shadow: 0 3px 12px rgba(24,32,38,.2); font-weight: 800; }
+        background: rgba(255,255,255,.96); box-shadow: 0 3px 12px rgba(24,32,38,.2); font-size: 13px; font-weight: 900; }
       #map-list-toggle svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
       #map-list-toggle .map-activity-dot { width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%;
         background: #2f8a4e; box-shadow: 0 0 0 2px rgba(47,138,78,.14); }

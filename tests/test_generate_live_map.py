@@ -659,7 +659,7 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "Loading linked incident…" in html
     assert "preserveMissingLinkedIncident: true" in html
     assert "height: 45svh" in html
-    assert "bottom: max(10px, env(safe-area-inset-bottom))" in html
+    assert "bottom: max(18px, calc(env(safe-area-inset-bottom) + 8px))" in html
     assert '#app[data-map-sheet="expanded"] .mobile-map-toolbar' in html
     assert "function revealPoint" in html
     assert "map.panBy([p.x - x, p.y - y], {animate: true, duration: .28" in html
@@ -897,7 +897,7 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "box-shadow: none" in html
     assert "Mileposts: Caltrans/LACPW" not in html
     assert "#map .leaflet-control-attribution" in html
-    assert "bottom: max(10px, env(safe-area-inset-bottom))" in html
+    assert "bottom: max(18px, calc(env(safe-area-inset-bottom) + 8px))" in html
     assert "new ResizeObserver(measureToolbar)" in html
     assert "setupMileMarkerLayer();" in html
     assert 'id="locate-user"' in html

@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.312 - 2026-10-12
+
+- Raise the mobile incident-list button slightly above the bottom edge and make
+  its label larger and bolder.
+
 ### 0.1.311 - 2026-10-10
 
 - Keep touch and wheel scrolling inside the Layers menu from moving or zooming
