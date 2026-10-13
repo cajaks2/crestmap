@@ -1074,7 +1074,7 @@ def view_menu(base_path, current, hours, region="forest", admin_mode=False, airc
 
 
 INCIDENT_MARKER_SYMBOLS = {
-    "collision": '<path d="M2.5 13h5l2 2v2.5h-7V13Zm19-6h-5l-2 2v2.5h7V7Z"/><circle cx="4.5" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="19.5" cy="13" r="1" fill="currentColor" stroke="none"/><path d="m12 8 .9 2.6 2.6.9-2.6.9L12 15l-.9-2.6-2.6-.9 2.6-.9Z" fill="currentColor" stroke="none"/>',
+    "collision": '<path d="M2 14v-4h2l1.5-3h3L10 10v4H2Zm20 0v-4h-2l-1.5-3h-3L14 10v4h8Z" stroke-width="2.2"/><path d="M4 17h4m8 0h4" stroke-width="2.2"/><path d="m12 8 .8 3.2L16 12l-3.2.8L12 16l-.8-3.2L8 12l3.2-.8Z" fill="currentColor" stroke="none"/>',
     "hazard": '<path d="m12 4 8 16H4L12 4Z"/><path d="M12 9v5m0 3h.01"/>',
     "closure": '<path d="M4 5h16v12H4zM6 5l6 12m1-12 6 12M7 17v3m10-3v3"/>',
     "fire": '<path d="M12 20c3.4 0 6-2.3 6-5.6 0-2.5-1.3-4.2-2.5-5.7.2 2.1-.9 3.5-2 4.1.2-3.4-1.3-6.5-4-8.8.3 3.5-3.5 6.2-3.5 10.4C6 17.7 8.6 20 12 20Z"/>',

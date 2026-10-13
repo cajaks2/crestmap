@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.314 - 2026-10-12
+
+- Simplify the crash pictograph into symmetric vehicle outlines and one clear
+  impact mark, removing the tiny wheel dots that crowded map badges.
+
 ### 0.1.313 - 2026-10-12
 
 - Raise the mobile incident-list button another 14 pixels above the bottom edge.
