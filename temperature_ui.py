@@ -86,7 +86,13 @@ TEMPERATURE_CSS = """
       transform: translateX(-50%);
     }
     .temperature-load-status.is-visible { display: flex; }
-    .temperature-load-status.is-error { cursor: pointer; color: #34483b; }
+    .temperature-load-action, .temperature-load-dismiss {
+      border: 0; background: transparent; color: inherit; font: inherit;
+    }
+    .temperature-load-action { display: flex; align-items: center; gap: 7px; padding: 0; text-align: left; }
+    .temperature-load-status.is-error .temperature-load-action:not(:disabled) { cursor: pointer; color: #34483b; }
+    .temperature-load-dismiss { display: none; margin-left: 4px; padding: 0 2px; cursor: pointer; font-size: 16px; line-height: 15px; }
+    .temperature-load-status.is-error .temperature-load-dismiss { display: block; }
     .temperature-load-spinner {
       width: 10px; height: 10px; flex: 0 0 auto; border: 2px solid #b9c3b8;
       border-top-color: #397654; border-radius: 50%; animation: temperature-spin .8s linear infinite;
@@ -116,18 +122,23 @@ TEMPERATURE_JS = r"""
       let retryTimer = null;
       let retryCountdown = null;
       let retryBlockedUntil = 0;
+      let errorDismissed = false;
       const previousPlacements = new Map();
       const button = document.querySelector("[data-temperature-layer-toggle]");
       if (!button) return;
-      const loadStatus = document.createElement("button");
-      loadStatus.type = "button";
+      const loadStatus = document.createElement("div");
       loadStatus.className = "temperature-load-status";
       loadStatus.setAttribute("aria-live", "polite");
-      loadStatus.innerHTML = '<span class="temperature-load-spinner" aria-hidden="true"></span><span></span>';
+      loadStatus.innerHTML = '<button type="button" class="temperature-load-action"><span class="temperature-load-spinner" aria-hidden="true"></span><span></span></button><button type="button" class="temperature-load-dismiss" aria-label="Dismiss temperature status" title="Dismiss">×</button>';
       map.getContainer().appendChild(loadStatus);
       L.DomEvent.disableClickPropagation(loadStatus);
-      loadStatus.addEventListener("click", () => {
-        if (state === "error" && !loadStatus.disabled) refresh();
+      const retryButton = loadStatus.querySelector(".temperature-load-action");
+      loadStatus.querySelector(".temperature-load-dismiss").addEventListener("click", () => {
+        errorDismissed = true;
+        updateLoadStatus();
+      });
+      retryButton.addEventListener("click", () => {
+        if (state === "error" && !retryButton.disabled) refresh();
       });
       button.addEventListener("click", () => {
         enabled = !enabled;
@@ -150,10 +161,10 @@ TEMPERATURE_JS = r"""
         const initialLoading = enabled && state === "loading" && !points.length;
         const initialError = enabled && state === "error" && !points.length;
         const waitSeconds = Math.max(0, Math.ceil((retryBlockedUntil - Date.now()) / 1000));
-        loadStatus.classList.toggle("is-visible", initialLoading || initialError);
+        loadStatus.classList.toggle("is-visible", !errorDismissed && (initialLoading || initialError));
         loadStatus.classList.toggle("is-error", initialError);
-        loadStatus.disabled = !initialError || waitSeconds > 0 || !navigator.onLine;
-        loadStatus.querySelector("span:last-child").textContent = initialError
+        retryButton.disabled = !initialError || waitSeconds > 0 || !navigator.onLine;
+        retryButton.querySelector("span:last-child").textContent = initialError
           ? !navigator.onLine ? "Offline · retrying when connected"
             : waitSeconds ? `Temperatures unavailable · Retrying in ${waitSeconds}s`
             : "Temperatures unavailable · Tap to retry"

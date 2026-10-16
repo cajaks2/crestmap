@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.318 - 2026-10-15
+
+- Let visitors dismiss the temperature retry banner for the current page visit
+  while automatic retries continue in the background.
+
 ### 0.1.317 - 2026-10-13
 
 - Give CHP `1144-Fatality` incidents a distinct F-in-hexagon map icon with a

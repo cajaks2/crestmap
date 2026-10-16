@@ -50,13 +50,19 @@ def test_temperature_retry_respects_server_backoff_and_recovers():
       const assert = require('node:assert/strict');
       const vm = require('node:vm');
       const timers = new Map(), intervals = new Map();
-      let nextTimer = 1, requests = 0, retryClick = null;
+      let nextTimer = 1, requests = 0, retryClick = null, dismissClick = null;
       const statusText = {textContent: ''};
       const description = {textContent: ''};
+      const visibility = {visible: false};
+      const retryButton = {
+        disabled: true, querySelector: () => statusText,
+        addEventListener(type, fn) {if (type === 'click') retryClick = fn;}
+      };
+      const dismissButton = {addEventListener(type, fn) {if (type === 'click') dismissClick = fn;}};
       const loadStatus = {
-        classList: {toggle() {}}, setAttribute() {},
-        addEventListener(type, fn) {if (type === 'click') retryClick = fn;},
-        querySelector() {return statusText;}, disabled: true
+        classList: {toggle(name, active) {if (name === 'is-visible') visibility.visible = active;}},
+        setAttribute() {},
+        querySelector(selector) {return selector === '.temperature-load-action' ? retryButton : dismissButton;}
       };
       const button = {
         classList: {toggle() {}}, setAttribute() {}, addEventListener() {},
@@ -93,19 +99,24 @@ def test_temperature_retry_respects_server_backoff_and_recovers():
       (async () => {
         await new Promise(setImmediate);
         assert.equal(requests, 1);
-        assert.equal(loadStatus.disabled, true);
+        assert.equal(retryButton.disabled, true);
+        assert.equal(visibility.visible, true);
         assert.match(statusText.textContent, /Retrying in [12]s/);
+        dismissClick();
+        assert.equal(visibility.visible, false);
         const retry = [...timers.values()].find(timer => timer.delay === 2000);
         assert.ok(retry, 'server backoff schedules a new request');
         retry.fn();
         await new Promise(setImmediate);
         assert.equal(requests, 2);
+        assert.equal(visibility.visible, false);
         assert.equal(description.textContent, 'Roads + terrain highs/lows · more detail as you zoom');
         const periodic = [...intervals.values()].find(timer => timer.delay === 15 * 60 * 1000);
         periodic.fn();
         await new Promise(setImmediate);
         assert.equal(requests, 3);
-        assert.equal(loadStatus.disabled, false);
+        assert.equal(retryButton.disabled, false);
+        assert.equal(visibility.visible, false);
         assert.equal(statusText.textContent, 'Temperatures unavailable · Tap to retry');
         retryClick();
         await new Promise(setImmediate);

@@ -317,6 +317,8 @@ def test_endpoint_and_local_render(tmp_path, monkeypatch, region):
     assert "Loading temperatures…" in rendered
     assert "Temperatures unavailable · Tap to retry" in rendered
     assert "Retrying in ${waitSeconds}s" in rendered
+    assert 'aria-label="Dismiss temperature status"' in rendered
+    assert 'errorDismissed = true' in rendered
     assert "scheduleRetry(retryAfter || 10, Boolean(retryAfter))" in rendered
     assert "controller.abort(), 30000" in rendered
     assert 'cache: "no-store"' in rendered

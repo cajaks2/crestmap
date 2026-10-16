@@ -173,7 +173,7 @@ def test_normalize_wildweb_out_time_is_explicitly_cleared():
 
 def test_scrape_once_archives_missing_wildweb_report_without_calling_it_cleared(tmp_path, monkeypatch):
     database = tmp_path / "wildweb.sqlite"
-    now = dt.datetime.now().astimezone()
+    now = dt.datetime.now(scrape_wildweb_incidents.PACIFIC_TZ)
     item = wildweb_item(date=now.replace(tzinfo=None).isoformat(timespec="seconds"))
     payloads = [
         {"retrieved": dt.datetime.now(dt.timezone.utc).isoformat(), "data": [item]},
