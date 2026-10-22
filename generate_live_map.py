@@ -5,6 +5,7 @@ import html
 import json
 import math
 import os
+import re
 import sqlite3
 from pathlib import Path
 from urllib.parse import urlsplit, urlencode
@@ -243,7 +244,25 @@ def hydrate_incident(row, region):
         incident["detail_entries"] = json.loads(incident.pop("details_json") or "[]")
     except json.JSONDecodeError:
         incident["detail_entries"] = []
+    incident["motorcycle_crash"] = is_motorcycle_crash(incident)
     return incident
+
+
+MOTORCYCLE_MENTION = re.compile(r"\bmotorcycl(?:e|ist)s?\b|\bm\s*/\s*c\b|\bmc\b", re.IGNORECASE)
+CRASH_INCIDENT_TYPE = re.compile(r"collision|hit and run|accident", re.IGNORECASE)
+
+
+def is_motorcycle_crash(incident):
+    if not CRASH_INCIDENT_TYPE.search(str(incident.get("type") or "")):
+        return False
+    descriptions = (incident.get("type"), incident.get("location_desc"))
+    if any(MOTORCYCLE_MENTION.search(str(value or "")) for value in descriptions):
+        return True
+    return any(
+        MOTORCYCLE_MENTION.search(str(entry.get("text") or ""))
+        for entry in incident.get("detail_entries") or []
+        if isinstance(entry, dict)
+    )
 
 
 def load_last_scrape_run(database, database_url=None, conn=None):
@@ -1099,6 +1118,11 @@ INCIDENT_MARKER_SYMBOLS = {
         '</g><path d="M6 21h13" stroke-width="2"/>'
         '<path d="m18 3 1.2 2.3L22 4.2l-1 2.6L23 9l-3.2-.3-1.3 2.1-.1-3-2.2-1.5 2.1-.4Z" fill="currentColor" stroke="none"/>'
     ),
+    "motorcycle": (
+        '<circle cx="5.5" cy="17" r="2.2"/><circle cx="17.5" cy="17" r="2.2"/>'
+        '<path d="m5.5 17 3.7-6h4l4.3 6m-8.3-6 2.5 6h5.8M9.4 7.6h3l2.3 3.4"/>'
+        '<path d="m18.4 3.5 1 2 2.2-.8-.8 2.2 1.7 1.5-2.5-.1-1.1 2-.3-2.5-2-1.1 2.3-.5Z" fill="currentColor" stroke="none"/>'
+    ),
     "fatality": (
         '<path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7Z" stroke-width="1.8"/>'
         '<path d="M9 17V7.5h6.5M9 12h5.5" stroke-width="3.2"/>'
@@ -1114,7 +1138,8 @@ INCIDENT_MARKER_SYMBOLS = {
 
 def incident_marker_key():
     icon_labels = (
-        ("collision", "Crash"), ("fatality", "Fatality"), ("hazard", "Hazard"),
+        ("collision", "Crash"), ("motorcycle", "Motorcycle crash"),
+        ("fatality", "Fatality"), ("hazard", "Hazard"),
         ("closure", "Closure"), ("fire", "Fire"),
         ("medical", "Medical aid"), ("roadwork", "Roadwork"),
         ("other", "Other"),
@@ -4940,6 +4965,7 @@ def build_html(
     function markerIcon(incident, selected = false, pulsing = false) {{
       const label = String(incident.type || "").toLowerCase();
       const category = label.includes("1144-fatality") ? "fatality"
+        : incident.motorcycle_crash ? "motorcycle"
         : /collision|hit and run|motor vehicle accident|fatality/.test(label) ? "collision"
         : /hazard|debris|animal|tree|rock|flood/.test(label) ? "hazard"
         : /closure|closed|weather|snow|chain control/.test(label) ? "closure"

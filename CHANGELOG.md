@@ -11,6 +11,13 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.322 - 2026-10-22
+
+- Show a motorcycle crash marker when a crash report explicitly mentions a
+  motorcycle or standalone `MC` in its summary or dispatch details. Preserve
+  the fatality and medical icons. No schema migration or reauthentication is
+  required.
+
 ### 0.1.321 - 2026-10-22
 
 - Limit archived WildWeb incidents to the selected history window using their

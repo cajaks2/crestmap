@@ -15,6 +15,7 @@ from generate_live_map import (
     include_linked_incident,
     incident_location_lines,
     incident_status,
+    is_motorcycle_crash,
     load_incident_by_key,
     load_incidents,
 )
@@ -206,6 +207,21 @@ def test_incident_location_lines_prioritize_roads_for_chp_and_descriptions_for_w
 
     assert incident_location_lines(chp) == ("I210 W / Angeles Crest Hwy", "OFR")
     assert incident_location_lines(wildweb) == ("PUBLIC ASSIST", "Angeles Forest Hwy MM 16.09")
+
+
+@pytest.mark.parametrize(
+    ("incident", "expected"),
+    [
+        ({"type": "Motor Vehicle Accident", "location_desc": "MC DOWN"}, True),
+        ({"type": "Traffic Collision", "detail_entries": [{"text": "VEH VS M/C"}]}, True),
+        ({"type": "Motorcycle Accident"}, True),
+        ({"type": "Medical Aid", "location_desc": "MC DOWN"}, False),
+        ({"type": "Traffic Collision", "location_desc": "MCCALL ROAD"}, False),
+        ({"type": "Traffic Collision", "detail_entries": [{"text": "CAR VS GUARDRAIL"}]}, False),
+    ],
+)
+def test_motorcycle_crash_requires_crash_type_and_explicit_motorcycle_mention(incident, expected):
+    assert is_motorcycle_crash(incident) is expected
 
 
 def test_load_incidents_sorts_wildweb_by_source_report_time_not_poll_time(tmp_path):
@@ -1000,12 +1016,15 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "updateWhenZooming: !compactMapRendering" in html
     assert "function markerIcon" in html
     assert 'label.includes("1144-fatality") ? "fatality"' in html
+    assert ': incident.motorcycle_crash ? "motorcycle"' in html
     assert ': /collision|hit and run|motor vehicle accident|fatality/.test(label) ? "collision"' in html
     assert 'is-${category}' in html
     assert '"fatality":"<path d=\\"M12 2.5 20.5 7v10L12 21.5 3.5 17V7Z\\" stroke-width=\\"1.8\\"/>' in html
     assert 'M9 17V7.5h6.5M9 12h5.5\\" stroke-width=\\"3.2\\"' in html
     assert '<span class="map-key-icon-item">' in html
     assert 'Fatality</span>' in html
+    assert 'Motorcycle crash</span>' in html
+    assert '"motorcycle":"<circle cx=\\"5.5\\" cy=\\"17\\" r=\\"2.2\\"/>' in html
     assert '"fire":"<path d=\\"M12 20c3.4 0 6-2.3 6-5.6' in html
     assert 'fill="#c63735"' not in html
     assert 'width: 36px;' in html
