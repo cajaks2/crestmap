@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.319 - 2026-10-22
+
+- Rebuild the application image with the current Python 3.12 slim base image
+  and refreshed runtime dependencies. No schema migration or reauthentication
+  is required.
+
 ### 0.1.318 - 2026-10-15
 
 - Let visitors dismiss the temperature retry banner for the current page visit
