@@ -66,32 +66,44 @@ def parse_forecasts(payload, region, now):
         freezing = hourly.get("freezing_level_height") or []
         if units.get("temperature_2m") != "°F" or units.get("rain") != "inch" or units.get("snowfall") != "inch":
             continue
+        freezing_unit = units.get("freezing_level_height")
+        if freezing_unit not in ("m", "ft"):
+            continue
+        freezing_to_m = 0.3048 if freezing_unit == "ft" else 1
         count = min(len(times), len(temperatures), len(probabilities), len(rain), len(snowfall), len(freezing))
         usable = []
         for index in range(count):
             values = (times[index], temperatures[index], probabilities[index], rain[index], snowfall[index], freezing[index])
             if not all(_number(value) for value in values):
                 continue
-            # Open-Meteo timestamps mark the start of an hourly interval. Keep
-            # upcoming guidance plus a short recent-rain window for wet-road context.
-            if (times[index] + 3600 > now - RECENT_RAIN_HOURS * 3600
-                    and times[index] <= now + FORECAST_HOURS * 3600):
-                usable.append(values)
+            # Rain, snow, and precipitation probability describe the hour
+            # ending at this timestamp; temperature and freezing level are
+            # instantaneous at that timestamp.
+            if (times[index] > now - RECENT_RAIN_HOURS * 3600
+                    and times[index] - 3600 <= now + FORECAST_HOURS * 3600):
+                usable.append((*values[:5], values[5] * freezing_to_m))
         if not usable:
             continue
-        upcoming = [item for item in usable if item[0] + 3600 > now]
-        recent = [item for item in usable if item[0] + 3600 <= now]
+        upcoming = [item for item in usable if item[0] > now]
+        recent = [item for item in usable if item[0] <= now]
         elevation_m = float(row["elevation"])
-        min_temperature = min((item[1] for item in upcoming), default=math.inf)
         probability = max((item[2] for item in upcoming), default=0)
         rain_inches = sum(max(0, item[3]) for item in upcoming)
         recent_rain_inches = sum(max(0, item[3]) for item in recent)
-        snow_inches = sum(max(0, item[4]) for item in upcoming)
-        min_freezing_level = min((item[5] for item in upcoming), default=math.inf)
+        # A model snowfall amount alone can be inconsistent with its air
+        # temperature and freezing level. Only mark snow at road elevation
+        # when those conditions support it in the same forecast hour.
+        snow_hours = [item for item in upcoming
+                      if item[4] >= 0.01 and item[1] <= 40
+                      and item[5] <= elevation_m + 300]
+        snow_inches = sum(max(0, item[4]) for item in snow_hours)
+        ice_hours = [item for item in upcoming
+                     if item[2] >= 30 and item[1] <= 34
+                     and item[5] <= elevation_m + 300]
         hazard = None
         if snow_inches >= 0.02:
             hazard = "snow"
-        elif probability >= 30 and min_temperature <= 34 and min_freezing_level <= elevation_m + 300:
+        elif ice_hours:
             hazard = "ice"
         elif probability >= 35 and rain_inches >= 0.02:
             hazard = "rain"
@@ -102,9 +114,9 @@ def parse_forecasts(payload, region, now):
         if not hazard:
             continue
         if hazard == "snow":
-            affected = [item for item in upcoming if item[4] >= 0.01]
+            affected = snow_hours
         elif hazard == "ice":
-            affected = [item for item in upcoming if item[2] >= 30 and item[1] <= 34 and item[5] <= elevation_m + 300]
+            affected = ice_hours
         elif hazard == "rain":
             affected = [item for item in upcoming if item[2] >= 35 and item[3] > 0]
         elif hazard == "rain_possible":
@@ -120,11 +132,11 @@ def parse_forecasts(payload, region, now):
         min_freezing_level = min(item[5] for item in summary)
         periods = []
         for item in affected:
-            start = item[0]
+            start = item[0] - 3600
             if periods and start <= periods[-1][1]:
-                periods[-1][1] = max(periods[-1][1], start + 3600)
+                periods[-1][1] = max(periods[-1][1], item[0])
             else:
-                periods.append([start, start + 3600])
+                periods.append([start, item[0]])
         name, latitude, longitude = sample
         points.append({
             "name": name,
@@ -137,8 +149,8 @@ def parse_forecasts(payload, region, now):
             "snow_inches": round(snow_inches, 2),
             "minimum_temperature_f": round(min_temperature, 1),
             "minimum_freezing_level_m": round(min_freezing_level, 1),
-            "starts_at": dt.datetime.fromtimestamp(affected[0][0], dt.timezone.utc).isoformat(),
-            "ends_at": dt.datetime.fromtimestamp(affected[-1][0] + 3600, dt.timezone.utc).isoformat(),
+            "starts_at": dt.datetime.fromtimestamp(affected[0][0] - 3600, dt.timezone.utc).isoformat(),
+            "ends_at": dt.datetime.fromtimestamp(affected[-1][0], dt.timezone.utc).isoformat(),
             "periods": [
                 {
                     "starts_at": dt.datetime.fromtimestamp(start, dt.timezone.utc).isoformat(),
@@ -146,7 +158,7 @@ def parse_forecasts(payload, region, now):
                 }
                 for start, end in periods
             ],
-            "valid_until": dt.datetime.fromtimestamp(affected[-1][0] + 3600, dt.timezone.utc).isoformat(),
+            "valid_until": dt.datetime.fromtimestamp(affected[-1][0], dt.timezone.utc).isoformat(),
         })
     return points
 
@@ -195,7 +207,7 @@ def load_road_weather(region):
             "hourly": "temperature_2m,precipitation_probability,rain,snowfall,freezing_level_height",
             "temperature_unit": "fahrenheit",
             "precipitation_unit": "inch",
-            "forecast_hours": FORECAST_HOURS,
+            "forecast_hours": FORECAST_HOURS + 1,
             "past_hours": RECENT_RAIN_HOURS,
             "timeformat": "unixtime",
             "cell_selection": "land",

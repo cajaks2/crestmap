@@ -14,11 +14,13 @@ from generate_live_map import build_html
 NOW = 1788550000
 
 
-def forecast_row(*, temperature=42.0, probability=70, rain=0.08, snow=0.0, freezing=2500):
-    times = [NOW + index * 3600 for index in range(weather.FORECAST_HOURS)]
+def forecast_row(*, temperature=42.0, probability=70, rain=0.08, snow=0.0, freezing=2500,
+                 freezing_unit="m"):
+    times = [NOW + (index + 1) * 3600 for index in range(weather.FORECAST_HOURS)]
     return {
         "elevation": 1800,
-        "hourly_units": {"temperature_2m": "°F", "rain": "inch", "snowfall": "inch"},
+        "hourly_units": {"temperature_2m": "°F", "rain": "inch", "snowfall": "inch",
+                         "freezing_level_height": freezing_unit},
         "hourly": {
             "time": times,
             "temperature_2m": [temperature] * len(times),
@@ -41,7 +43,9 @@ def setup_function():
 
 def test_forecasts_classify_rain_snow_and_possible_ice():
     rain = weather.parse_forecasts(forecast_payload(rain=0.04), "forest", NOW)
-    snow = weather.parse_forecasts(forecast_payload(rain=0, snow=0.08), "forest", NOW)
+    snow = weather.parse_forecasts(
+        forecast_payload(temperature=32, rain=0, snow=0.08, freezing=1750), "forest", NOW
+    )
     ice = weather.parse_forecasts(
         forecast_payload(temperature=31, rain=0, probability=55, freezing=1750), "forest", NOW
     )
@@ -54,6 +58,32 @@ def test_forecasts_classify_rain_snow_and_possible_ice():
         "starts_at": dt.datetime.fromtimestamp(NOW, dt.timezone.utc).isoformat(),
         "ends_at": dt.datetime.fromtimestamp(NOW + weather.FORECAST_HOURS * 3600, dt.timezone.utc).isoformat(),
     }]
+
+
+def test_snow_requires_supported_road_conditions_in_same_hour():
+    warm = weather.parse_forecasts(
+        forecast_payload(temperature=49.9, rain=0.9, snow=0.47,
+                         freezing=8661, freezing_unit="ft"), "forest", NOW
+    )
+    assert warm and {point["hazard"] for point in warm} == {"rain"}
+    assert warm[0]["snow_inches"] == 0
+
+    cold = weather.parse_forecasts(
+        forecast_payload(temperature=36, rain=0, snow=0.08,
+                         freezing=6600, freezing_unit="ft"), "forest", NOW
+    )
+    assert cold and {point["hazard"] for point in cold} == {"snow"}
+    assert cold[0]["minimum_freezing_level_m"] == 2011.7
+
+
+def test_snow_and_ice_conditions_must_overlap_precipitation_hour():
+    payload = forecast_payload(temperature=50, rain=0, snow=0)
+    for row in payload:
+        row["hourly"]["snowfall"][0] = 0.08
+        row["hourly"]["temperature_2m"][1] = 30
+        row["hourly"]["freezing_level_height"][1] = 1700
+        row["hourly"]["precipitation_probability"][1] = 0
+    assert weather.parse_forecasts(payload, "forest", NOW) == []
 
 
 def test_dry_forecasts_do_not_add_map_markers():
@@ -91,6 +121,17 @@ def test_forecast_retains_recent_modeled_rain():
     assert points and {point["hazard"] for point in points} == {"rain_recent"}
 
 
+def test_hourly_precipitation_timestamp_is_end_of_hour():
+    payload = forecast_payload("forest", probability=10, rain=0, snow=0)
+    for row in payload:
+        row["hourly"]["time"][0] = NOW
+        row["hourly"]["rain"][0] = 0.1
+    point = weather.parse_forecasts(payload, "forest", NOW)[0]
+    assert point["hazard"] == "rain_recent"
+    assert point["starts_at"] == dt.datetime.fromtimestamp(NOW - 3600, dt.timezone.utc).isoformat()
+    assert point["ends_at"] == dt.datetime.fromtimestamp(NOW, dt.timezone.utc).isoformat()
+
+
 def test_alerts_are_filtered_to_region_and_weather_events():
     result = weather.parse_alerts({"features": [
         {"properties": {"id": "one", "event": "Winter Storm Warning", "areaDesc": "Los Angeles County", "severity": "Severe", "headline": "Heavy snow expected"}},
@@ -123,7 +164,7 @@ def test_load_batches_forecasts_and_keeps_key_server_side(monkeypatch):
     open_meteo_url = urlsplit(calls[0])
     params = parse_qs(open_meteo_url.query)
     assert open_meteo_url.hostname == "customer-api.open-meteo.com"
-    assert params["forecast_hours"] == [str(weather.FORECAST_HOURS)]
+    assert params["forecast_hours"] == [str(weather.FORECAST_HOURS + 1)]
     assert params["past_hours"] == [str(weather.RECENT_RAIN_HOURS)]
     assert "synthetic-key" not in json.dumps(result)
     assert len(calls) == 2

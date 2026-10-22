@@ -11,6 +11,13 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.320 - 2026-10-22
+
+- Show modeled snow at road level only when the same forecast hour has
+  compatible air temperature and freezing level; convert provider freezing
+  levels from feet when needed and align precipitation windows with the hour
+  they actually cover. No schema migration or reauthentication is required.
+
 ### 0.1.319 - 2026-10-22
 
 - Rebuild the application image with the current Python 3.12 slim base image
