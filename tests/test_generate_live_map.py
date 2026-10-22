@@ -55,7 +55,7 @@ def incident_row(event_key, status, latest_observed_at, incident_no):
 def test_incident_icon_pack_has_valid_svg_for_each_map_category():
     assert MATERIAL_SYMBOL_NAMES == {
         "collision": "car_crash",
-        "motorcycle": "motorcycle",
+        "motorcycle": "two_wheeler",
         "fatality": "hexagon",
         "hazard": "warning",
         "closure": "block",
@@ -69,6 +69,15 @@ def test_incident_icon_pack_has_valid_svg_for_each_map_category():
         assert root.attrib["viewBox"] == "0 -960 960 960"
         assert root.attrib["fill"] == "currentColor"
         assert len(root.findall("path")) == (2 if kind == "fatality" else 1)
+        if kind == "motorcycle":
+            bike = root.find("g")
+            assert bike is not None
+            assert bike.attrib["transform"] == "translate(-75 105) scale(.86)"
+            assert len(bike.findall("path")) == 1
+            assert len(root.findall("path")) == 1
+            badge = root.find("path").attrib["d"]
+            assert badge.startswith("M680-480")
+            assert badge[len("M680-480"):] in INCIDENT_MARKER_SVGS["collision"]
 
 
 def test_mile_marker_snapshot_covers_crest_and_forest_corridors():

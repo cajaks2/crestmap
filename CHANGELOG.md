@@ -11,6 +11,13 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.324 - 2026-10-22
+
+- Replace the motorcycle crash glyph with the Material Symbols Sharp
+  `two_wheeler` silhouette and the same alert badge used on car crashes, so
+  both incident markers read as crashes at map size. No schema migration or
+  reauthentication is required.
+
 ### 0.1.323 - 2026-10-22
 
 - Replace the custom incident map glyphs with a consistent Material Symbols
