@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.325 - 2026-10-22
+
+- Reposition and resize the motorcycle crash glyph so both wheels fit inside
+  the map marker at small sizes. No schema migration or reauthentication is
+  required.
+
 ### 0.1.324 - 2026-10-22
 
 - Replace the motorcycle crash glyph with the Material Symbols Sharp

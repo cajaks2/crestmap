@@ -38,7 +38,7 @@ def incident_icon_svg(kind):
     if kind == "motorcycle":
         return (
             '<svg viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">'
-            f'<g transform="translate(-75 105) scale(.86)"><path d="{path}"/></g>'
+            f'<g transform="translate(32 40) scale(.76)"><path d="{path}"/></g>'
             f'<path d="{_CRASH_BADGE_PATH}"/></svg>'
         )
     f_path = '<path d="M382-690h255v75H465v102h148v75H465v168h-83Z"/>' if kind == "fatality" else ""

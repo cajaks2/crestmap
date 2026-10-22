@@ -72,7 +72,14 @@ def test_incident_icon_pack_has_valid_svg_for_each_map_category():
         if kind == "motorcycle":
             bike = root.find("g")
             assert bike is not None
-            assert bike.attrib["transform"] == "translate(-75 105) scale(.86)"
+            assert bike.attrib["transform"] == "translate(32 40) scale(.76)"
+            transform = re.fullmatch(
+                r"translate\(([-\d.]+) ([-\d.]+)\) scale\(([-\d.]+)\)",
+                bike.attrib["transform"],
+            )
+            assert transform is not None
+            left, _, scale = map(float, transform.groups())
+            assert 0 < left and left + 960 * scale < 960
             assert len(bike.findall("path")) == 1
             assert len(root.findall("path")) == 1
             badge = root.find("path").attrib["d"]
