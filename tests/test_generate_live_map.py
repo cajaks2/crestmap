@@ -21,7 +21,7 @@ from generate_live_map import (
     load_incidents,
 )
 from mile_markers import MILE_MARKERS
-from incident_marker_icons import INCIDENT_MARKER_SVGS, MATERIAL_SYMBOL_NAMES
+from incident_marker_icons import INCIDENT_MARKER_SVGS, ICON_SOURCE_NAMES
 from scrape_chp_traffic import (
     connect_database,
     insert_observation,
@@ -53,9 +53,9 @@ def incident_row(event_key, status, latest_observed_at, incident_no):
 
 
 def test_incident_icon_pack_has_valid_svg_for_each_map_category():
-    assert MATERIAL_SYMBOL_NAMES == {
+    assert ICON_SOURCE_NAMES == {
         "collision": "car_crash",
-        "motorcycle": "two_wheeler",
+        "motorcycle": "Font Awesome Free motorcycle",
         "fatality": "hexagon",
         "hazard": "warning",
         "closure": "block",
@@ -72,14 +72,15 @@ def test_incident_icon_pack_has_valid_svg_for_each_map_category():
         if kind == "motorcycle":
             bike = root.find("g")
             assert bike is not None
-            assert bike.attrib["transform"] == "translate(32 40) scale(.76)"
+            assert bike.attrib["transform"] == "translate(25 -610) scale(1.08)"
             transform = re.fullmatch(
                 r"translate\(([-\d.]+) ([-\d.]+)\) scale\(([-\d.]+)\)",
                 bike.attrib["transform"],
             )
             assert transform is not None
-            left, _, scale = map(float, transform.groups())
-            assert 0 < left and left + 960 * scale < 960
+            left, top, scale = map(float, transform.groups())
+            assert 0 < left and left + 640 * scale < 960
+            assert -960 < top and top + 512 * scale < 0
             assert len(bike.findall("path")) == 1
             assert len(root.findall("path")) == 1
             badge = root.find("path").attrib["d"]

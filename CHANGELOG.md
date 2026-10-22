@@ -11,6 +11,13 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.326 - 2026-10-22
+
+- Replace the thin motorcycle crash glyph with a fuller motorcycle silhouette
+  that reads clearly beside the car crash marker at map size. Keep the matching
+  alert badge and add the icon attribution. No schema migration or
+  reauthentication is required.
+
 ### 0.1.325 - 2026-10-22
 
 - Reposition and resize the motorcycle crash glyph so both wheels fit inside
