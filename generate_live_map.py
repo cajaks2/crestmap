@@ -16,6 +16,7 @@ from map_workspace_ui import MAP_WORKSPACE_CSS, MAP_WORKSPACE_HTML, MAP_SHEET_HT
 from road_weather_ui import ROAD_WEATHER_CSS, road_weather_script
 from geo_bounds import REGION_BOUNDS, clear_coordinates_outside_region_bounds
 from incident_filters import is_nearby_forest_highway_incident
+from incident_marker_icons import INCIDENT_MARKER_SVGS
 from mile_markers import MILE_MARKERS
 
 
@@ -1108,34 +1109,6 @@ def view_menu(base_path, current, hours, region="forest", admin_mode=False, airc
     )
 
 
-INCIDENT_MARKER_SYMBOLS = {
-    "collision": (
-        '<g transform="rotate(-12 11.5 13)">'
-        '<path d="M4.5 11.5 6 7.2C6.4 6.1 7.1 5.7 8.2 5.7h7.1c1.1 0 1.9.5 2.2 1.5l1.5 4.3v5.1c0 1.1-.8 1.9-1.9 1.9H6.4c-1.1 0-1.9-.8-1.9-1.9Z" fill="currentColor" stroke="none"/>'
-        '<path d="M7.4 10.8 8.5 7.7h6.6l1.1 3.1Z" fill="var(--incident-marker-surface)" stroke="none"/>'
-        '<circle cx="7.7" cy="14.9" r="1.3" fill="var(--incident-marker-surface)" stroke="none"/>'
-        '<circle cx="16.1" cy="14.9" r="1.3" fill="var(--incident-marker-surface)" stroke="none"/>'
-        '</g><path d="M6 21h13" stroke-width="2"/>'
-        '<path d="m18 3 1.2 2.3L22 4.2l-1 2.6L23 9l-3.2-.3-1.3 2.1-.1-3-2.2-1.5 2.1-.4Z" fill="currentColor" stroke="none"/>'
-    ),
-    "motorcycle": (
-        '<circle cx="5.5" cy="17" r="2.2"/><circle cx="17.5" cy="17" r="2.2"/>'
-        '<path d="m5.5 17 3.7-6h4l4.3 6m-8.3-6 2.5 6h5.8M9.4 7.6h3l2.3 3.4"/>'
-        '<path d="m18.4 3.5 1 2 2.2-.8-.8 2.2 1.7 1.5-2.5-.1-1.1 2-.3-2.5-2-1.1 2.3-.5Z" fill="currentColor" stroke="none"/>'
-    ),
-    "fatality": (
-        '<path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7Z" stroke-width="1.8"/>'
-        '<path d="M9 17V7.5h6.5M9 12h5.5" stroke-width="3.2"/>'
-    ),
-    "hazard": '<path d="m12 4 8 16H4L12 4Z"/><path d="M12 9v5m0 3h.01"/>',
-    "closure": '<path d="M4 5h16v12H4zM6 5l6 12m1-12 6 12M7 17v3m10-3v3"/>',
-    "fire": '<path d="M12 20c3.4 0 6-2.3 6-5.6 0-2.5-1.3-4.2-2.5-5.7.2 2.1-.9 3.5-2 4.1.2-3.4-1.3-6.5-4-8.8.3 3.5-3.5 6.2-3.5 10.4C6 17.7 8.6 20 12 20Z"/>',
-    "medical": '<path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6Z" fill="currentColor" stroke="none"/>',
-    "roadwork": '<path d="M7 5h6l3 7H7V5ZM3 13h14v3H3zM5 18h11M18 12h3v7h-3"/>',
-    "other": '<circle cx="12" cy="12" r="8"/><path d="M9 9a3 3 0 1 1 4 3c-1 .6-1 1.2-1 2m0 3h.01"/>',
-}
-
-
 def incident_marker_key():
     icon_labels = (
         ("collision", "Crash"), ("motorcycle", "Motorcycle crash"),
@@ -1146,10 +1119,7 @@ def incident_marker_key():
     )
     icons = "".join(
         '<span class="map-key-icon-item"><span class="map-key-icon" aria-hidden="true">'
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" '
-        'stroke-linecap="round" stroke-linejoin="round">{}</svg></span>{}</span>'.format(
-            INCIDENT_MARKER_SYMBOLS[kind], label
-        )
+        f'{INCIDENT_MARKER_SVGS[kind]}</span>{label}</span>'
         for kind, label in icon_labels
     )
     return (
@@ -4972,8 +4942,8 @@ def build_html(
         : /wildfire|fire/.test(label) ? "fire"
         : /medical|med aid/.test(label) ? "medical"
         : /maintenance|roadwork|construction/.test(label) ? "roadwork" : "other";
-      const symbols = {json.dumps(INCIDENT_MARKER_SYMBOLS, separators=(',', ':'))};
-      const glyph = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${{symbols[category]}}</svg>`;
+      const symbols = {json.dumps(INCIDENT_MARKER_SVGS, separators=(',', ':'))};
+      const glyph = symbols[category];
       const markerState = incident.status === "active" ? "is-active" : incident.status === "reported" ? "is-reported" : "is-cleared";
       const size = 44; // A 36px visible badge inside a generous touch target.
       return L.divIcon({{

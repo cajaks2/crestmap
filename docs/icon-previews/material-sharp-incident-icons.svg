@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="390" viewBox="0 0 900 390">
+<rect width="900" height="390" fill="#f4f7ef"/>
+<text x="30" y="34" font-family="Arial" font-size="20" font-weight="700" fill="#18392b">Material Symbols Sharp · proposed Crestmap markers</text>
+<rect x="30" y="68" width="270" height="76" rx="10" fill="#fff" stroke="#d8ddd2"/>
+<rect x="45" y="88" width="36" height="36" rx="7" fill="#f5f7f1" stroke="#839189" stroke-width="2"/>
+<svg x="50" y="93" width="26" height="26" viewBox="0 -960 960 960" fill="#344d3d" aria-hidden="true"><path d="M160-240v-200 200ZM80-80v-360l98-280h225q-3 20-3 40t3 40H234l-42 120h259q17 24 38 44.5t47 35.5H160v200h560v-163q21-3 41-9t39-15v347H680v-80H200v80H80Zm540-200q25 0 42.5-17.5T680-340q0-25-17.5-42.5T620-400q-25 0-42.5 17.5T560-340q0 25 17.5 42.5T620-280Zm-360 0q25 0 42.5-17.5T320-340q0-25-17.5-42.5T260-400q-25 0-42.5 17.5T200-340q0 25 17.5 42.5T260-280Zm420-200q-83 0-141.5-58.5T480-680q0-82 58-141t142-59q83 0 141.5 58.5T880-680q0 83-58.5 141.5T680-480Zm-20-160h40v-160h-40v160Zm20 80q8 0 14-6t6-14q0-8-6-14t-14-6q-8 0-14 6t-6 14q0 8 6 14t14 6Z"/></svg>
+<text x="94" y="113" font-family="Arial" font-size="16" font-weight="700" fill="#18392b">Crash</text>
+<rect x="325" y="68" width="270" height="76" rx="10" fill="#fff" stroke="#d8ddd2"/>
+<rect x="340" y="88" width="36" height="36" rx="7" fill="#f5f7f1" stroke="#839189" stroke-width="2"/>
+<svg x="345" y="93" width="26" height="26" viewBox="0 -960 960 960" fill="#344d3d" aria-hidden="true"><path d="M428-520h-70 150-80ZM200-200q-83 0-141.5-58.5T0-400q0-83 58.5-141.5T200-600h464l-80-80H440v-80h176l162 162q78 6 130 63t52 135q0 83-58.5 141.5T760-200q-83 0-141.5-58.5T560-400q0-18 2.5-35.5T572-470L462-360h-66q-14 70-69 115t-127 45Zm560-80q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35Zm-560 0q38 0 68.5-22t43.5-58H200v-80h112q-13-36-43.5-58T200-520q-50 0-85 35t-35 85q0 50 35 85t85 35Zm198-160h30l80-80H358q15 17 25 37t15 43Z"/></svg>
+<text x="389" y="113" font-family="Arial" font-size="16" font-weight="700" fill="#18392b">Motorcycle crash</text>
+<rect x="620" y="68" width="270" height="76" rx="10" fill="#fff" stroke="#d8ddd2"/>
+<rect x="635" y="88" width="36" height="36" rx="7" fill="#f5f7f1" stroke="#839189" stroke-width="2"/>
+<svg x="640" y="93" width="26" height="26" viewBox="0 -960 960 960" fill="#344d3d" aria-hidden="true"><path d="M272-120 64-480l208-360h416l208 360-208 360H272Zm46-80h324l161-280-161-280H318L156-480l162 280Zm162-280Z"/><path d="M382-690h255v75H465v102h148v75H465v168h-83Z"/></svg>
+<text x="684" y="113" font-family="Arial" font-size="16" font-weight="700" fill="#18392b">Fatality</text>
+<rect x="30" y="170" width="270" height="76" rx="10" fill="#fff" stroke="#d8ddd2"/>
+<rect x="45" y="190" width="36" height="36" rx="7" fill="#f5f7f1" stroke="#839189" stroke-width="2"/>
+<svg x="50" y="195" width="26" height="26" viewBox="0 -960 960 960" fill="#344d3d" aria-hidden="true"><path d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm330.5-51.5Q520-263 520-280t-11.5-28.5Q497-320 480-320t-28.5 11.5Q440-297 440-280t11.5 28.5Q463-240 480-240t28.5-11.5ZM440-360h80v-200h-80v200Zm40-100Z"/></svg>
+<text x="94" y="215" font-family="Arial" font-size="16" font-weight="700" fill="#18392b">Hazard</text>
+<rect x="325" y="170" width="270" height="76" rx="10" fill="#fff" stroke="#d8ddd2"/>
+<rect x="340" y="190" width="36" height="36" rx="7" fill="#f5f7f1" stroke="#839189" stroke-width="2"/>
+<svg x="345" y="195" width="26" height="26" viewBox="0 -960 960 960" fill="#344d3d" aria-hidden="true"><path d="M324-111.5Q251-143 197-197t-85.5-127Q80-397 80-480t31.5-156Q143-709 197-763t127-85.5Q397-880 480-880t156 31.5Q709-817 763-763t85.5 127Q880-563 880-480t-31.5 156Q817-251 763-197t-127 85.5Q563-80 480-80t-156-31.5ZM480-160q54 0 104-17.5t92-50.5L228-676q-33 42-50.5 92T160-480q0 134 93 227t227 93Zm252-124q33-42 50.5-92T800-480q0-134-93-227t-227-93q-54 0-104 17.5T284-732l448 448ZM480-480Z"/></svg>
+<text x="389" y="215" font-family="Arial" font-size="16" font-weight="700" fill="#18392b">Closure</text>
+<rect x="620" y="170" width="270" height="76" rx="10" fill="#fff" stroke="#d8ddd2"/>
+<rect x="635" y="190" width="36" height="36" rx="7" fill="#f5f7f1" stroke="#839189" stroke-width="2"/>
+<svg x="640" y="195" width="26" height="26" viewBox="0 -960 960 960" fill="#344d3d" aria-hidden="true"><path d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"/></svg>
+<text x="684" y="215" font-family="Arial" font-size="16" font-weight="700" fill="#18392b">Fire</text>
+<rect x="30" y="272" width="270" height="76" rx="10" fill="#fff" stroke="#d8ddd2"/>
+<rect x="45" y="292" width="36" height="36" rx="7" fill="#f5f7f1" stroke="#839189" stroke-width="2"/>
+<svg x="50" y="297" width="26" height="26" viewBox="0 -960 960 960" fill="#344d3d" aria-hidden="true"><path d="M80-80v-640h240v-160h320v160h240v640H80Zm80-80h640v-480H160v480Zm240-560h160v-80H400v80ZM160-160v-480 480Zm280-200v120h80v-120h120v-80H520v-120h-80v120H320v80h120Z"/></svg>
+<text x="94" y="317" font-family="Arial" font-size="16" font-weight="700" fill="#18392b">Medical aid</text>
+<rect x="325" y="272" width="270" height="76" rx="10" fill="#fff" stroke="#d8ddd2"/>
+<rect x="340" y="292" width="36" height="36" rx="7" fill="#f5f7f1" stroke="#839189" stroke-width="2"/>
+<svg x="345" y="297" width="26" height="26" viewBox="0 -960 960 960" fill="#344d3d" aria-hidden="true"><path d="M756-120 537-339l84-84 219 219-84 84Zm-552 0-84-84 276-276-68-68-28 28-51-51v82l-28 28-121-121 28-28h82l-50-50 142-142q20-20 43-29t47-9q24 0 47 9t43 29l-92 92 50 50-28 28 68 68 90-90q-4-11-6.5-23t-2.5-24q0-59 40.5-99.5T701-841q15 0 28.5 3t27.5 9l-99 99 72 72 99-99q7 14 9.5 27.5T841-701q0 59-40.5 99.5T701-561q-12 0-24-2t-23-7L204-120Z"/></svg>
+<text x="389" y="317" font-family="Arial" font-size="16" font-weight="700" fill="#18392b">Roadwork</text>
+<rect x="620" y="272" width="270" height="76" rx="10" fill="#fff" stroke="#d8ddd2"/>
+<rect x="635" y="292" width="36" height="36" rx="7" fill="#f5f7f1" stroke="#839189" stroke-width="2"/>
+<svg x="640" y="297" width="26" height="26" viewBox="0 -960 960 960" fill="#344d3d" aria-hidden="true"><path d="M513.5-254.5Q528-269 528-290t-14.5-35.5Q499-340 478-340t-35.5 14.5Q428-311 428-290t14.5 35.5Q457-240 478-240t35.5-14.5ZM442-394h74q0-33 7.5-52t42.5-52q26-26 41-49.5t15-56.5q0-56-41-86t-97-30q-57 0-92.5 30T342-618l66 26q5-18 22.5-39t53.5-21q32 0 48 17.5t16 38.5q0 20-12 37.5T506-526q-44 39-54 59t-10 73Zm38 314q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
+<text x="684" y="317" font-family="Arial" font-size="16" font-weight="700" fill="#18392b">Other</text>
+</svg>

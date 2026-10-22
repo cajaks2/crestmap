@@ -11,6 +11,14 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.323 - 2026-10-22
+
+- Replace the custom incident map glyphs with a consistent Material Symbols
+  Sharp set for crash, motorcycle, hazard, closure, fire, medical, roadwork,
+  and other reports; retain the fatality F in a sharp hexagon. Bundle the icon
+  license and update the map key. No schema migration or reauthentication is
+  required.
+
 ### 0.1.322 - 2026-10-22
 
 - Show a motorcycle crash marker when a crash report explicitly mentions a

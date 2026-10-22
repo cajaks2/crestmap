@@ -3,6 +3,7 @@ import json
 import re
 import shutil
 import subprocess
+import xml.etree.ElementTree as ET
 
 import pytest
 
@@ -20,6 +21,7 @@ from generate_live_map import (
     load_incidents,
 )
 from mile_markers import MILE_MARKERS
+from incident_marker_icons import INCIDENT_MARKER_SVGS, MATERIAL_SYMBOL_NAMES
 from scrape_chp_traffic import (
     connect_database,
     insert_observation,
@@ -48,6 +50,25 @@ def incident_row(event_key, status, latest_observed_at, incident_no):
         "details_hash": f"hash-{incident_no}",
         "detail_entries": [{"time": "7:37 AM", "entry_no": "0001", "text": f"{status} detail"}],
     }
+
+
+def test_incident_icon_pack_has_valid_svg_for_each_map_category():
+    assert MATERIAL_SYMBOL_NAMES == {
+        "collision": "car_crash",
+        "motorcycle": "motorcycle",
+        "fatality": "hexagon",
+        "hazard": "warning",
+        "closure": "block",
+        "fire": "local_fire_department",
+        "medical": "medical_services",
+        "roadwork": "construction",
+        "other": "help",
+    }
+    for kind, svg in INCIDENT_MARKER_SVGS.items():
+        root = ET.fromstring(svg)
+        assert root.attrib["viewBox"] == "0 -960 960 960"
+        assert root.attrib["fill"] == "currentColor"
+        assert len(root.findall("path")) == (2 if kind == "fatality" else 1)
 
 
 def test_mile_marker_snapshot_covers_crest_and_forest_corridors():
@@ -185,7 +206,7 @@ def test_build_html_labels_wildweb_report_without_claiming_it_is_active_or_clear
     assert "wildWebReportedVisualAge" not in html
     assert "--incident-age-saturation" not in html
     assert 'button.className = "incident"' in html
-    assert '"medical":"<path d=\\"M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6Z\\" fill=\\"currentColor\\"' in html
+    assert '"medical":"<svg viewBox=\\"0 -960 960 960\\" fill=\\"currentColor\\"' in html
     assert 'fill="#c63735"' not in html
     assert ".incident-marker.is-cleared .incident-marker-core" in html
     assert "opacity: 0.88;" not in html
@@ -1019,13 +1040,13 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert ': incident.motorcycle_crash ? "motorcycle"' in html
     assert ': /collision|hit and run|motor vehicle accident|fatality/.test(label) ? "collision"' in html
     assert 'is-${category}' in html
-    assert '"fatality":"<path d=\\"M12 2.5 20.5 7v10L12 21.5 3.5 17V7Z\\" stroke-width=\\"1.8\\"/>' in html
-    assert 'M9 17V7.5h6.5M9 12h5.5\\" stroke-width=\\"3.2\\"' in html
+    assert '"fatality":"<svg viewBox=\\"0 -960 960 960\\" fill=\\"currentColor\\"' in html
+    assert 'M382-690h255v75H465v102h148v75H465v168h-83Z' in html
     assert '<span class="map-key-icon-item">' in html
     assert 'Fatality</span>' in html
     assert 'Motorcycle crash</span>' in html
-    assert '"motorcycle":"<circle cx=\\"5.5\\" cy=\\"17\\" r=\\"2.2\\"/>' in html
-    assert '"fire":"<path d=\\"M12 20c3.4 0 6-2.3 6-5.6' in html
+    assert '"motorcycle":"<svg viewBox=\\"0 -960 960 960\\" fill=\\"currentColor\\"' in html
+    assert '"fire":"<svg viewBox=\\"0 -960 960 960\\" fill=\\"currentColor\\"' in html
     assert 'fill="#c63735"' not in html
     assert 'width: 36px;' in html
     assert 'width: 26px;' in html
