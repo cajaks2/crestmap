@@ -152,13 +152,27 @@ def region_viewport(region):
     return REGION_VIEWPORTS[normalize_region(region)]
 
 
+def archived_wildweb_in_window(incident, cutoff):
+    """Keep archived WildWeb reports only while their report time is in range."""
+    if (incident.get("source") or "chp") != "wildweb" or incident.get("status") != "archived":
+        return True
+    for value in (incident.get("source_reported_at"), incident.get("first_seen")):
+        if not value:
+            continue
+        try:
+            reported_at = dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            return reported_at.timestamp() >= cutoff.timestamp()
+        except (TypeError, ValueError):
+            continue
+    return False
+
+
 def load_incidents(database, hours, database_url=None, region="forest", conn=None):
     region = normalize_region(region)
     if conn is None and not database_url and not database.exists():
         return []
-    cutoff = (dt.datetime.now().astimezone() - dt.timedelta(hours=hours)).isoformat(
-        timespec="seconds"
-    )
+    cutoff_at = dt.datetime.now().astimezone() - dt.timedelta(hours=hours)
+    cutoff = cutoff_at.isoformat(timespec="seconds")
     should_close = False
     if conn is not None:
         placeholder = "%s" if database_url else "?"
@@ -208,7 +222,9 @@ def load_incidents(database, hours, database_url=None, region="forest", conn=Non
     incidents = []
     for row in rows:
         incident = hydrate_incident(row, region)
-        if region != "forest" or not is_nearby_forest_highway_incident(incident):
+        if archived_wildweb_in_window(incident, cutoff_at) and (
+            region != "forest" or not is_nearby_forest_highway_incident(incident)
+        ):
             incidents.append(incident)
     incidents.sort(key=lambda incident: str(incident.get("incident_no") or ""), reverse=True)
     incidents.sort(key=incident_recency, reverse=True)

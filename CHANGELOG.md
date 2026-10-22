@@ -11,6 +11,13 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.321 - 2026-10-22
+
+- Limit archived WildWeb incidents to the selected history window using their
+  original report time, so aging out does not extend their visibility by another
+  window. Align incident metrics with the list. No schema migration or
+  reauthentication is required.
+
 ### 0.1.320 - 2026-10-22
 
 - Show modeled snow at road level only when the same forecast hour has

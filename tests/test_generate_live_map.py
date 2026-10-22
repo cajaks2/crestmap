@@ -25,6 +25,7 @@ from scrape_chp_traffic import (
     mark_cleared,
     upsert_active_event,
 )
+from serve_live_map import load_metric_status
 
 
 def incident_row(event_key, status, latest_observed_at, incident_no):
@@ -262,6 +263,43 @@ def test_load_incidents_sorts_wildweb_by_source_report_time_not_poll_time(tmp_pa
         recent_cleared["event_key"],
         polled_wildweb["event_key"],
     ]
+
+
+def test_archived_wildweb_uses_report_time_for_history_window_and_metrics(tmp_path):
+    database = tmp_path / "wildweb-window.sqlite"
+    conn = connect_database(database)
+    now = dt.datetime.now().astimezone()
+    for name, report_age, status in (
+        ("old-archived", 120, "archived"),
+        ("recent-archived", 24, "archived"),
+        ("old-reported", 120, "reported"),
+    ):
+        row = incident_row(f"wildweb|CAANCC|{name}", status, now.isoformat(timespec="seconds"), name)
+        row.update({
+            "center": "CAANCC",
+            "source": "wildweb",
+            "source_event_id": name,
+            "source_status": "listed",
+            "source_reported_at": (now - dt.timedelta(hours=report_age)).isoformat(timespec="seconds"),
+            "status": "reported",
+        })
+        upsert_active_event(conn, row)
+        insert_observation(conn, row, "reported")
+        if status == "archived":
+            conn.execute(
+                "UPDATE events SET status = 'archived', source_status = 'aged_out', cleared_at = ? WHERE event_key = ?",
+                (now.isoformat(timespec="seconds"), row["event_key"]),
+            )
+    conn.commit()
+
+    incidents = load_incidents(database, 72, conn=conn)
+    metrics = load_metric_status(conn, 72)
+    conn.close()
+
+    assert {incident["source_event_id"] for incident in incidents} == {"recent-archived", "old-reported"}
+    assert metrics["total_count"] == 2
+    assert metrics["mapped_count"] == 2
+    assert metrics["reported_count"] == 1
 
 
 def test_load_incident_by_key_finds_incident_outside_window(tmp_path):

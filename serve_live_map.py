@@ -22,6 +22,7 @@ from push_notifications import (
     SOURCES as PUSH_SOURCES,
 )
 from generate_live_map import (
+    archived_wildweb_in_window,
     build_about_html,
     build_history_html,
     build_html,
@@ -288,16 +289,12 @@ def metric_line(name, value, labels=None):
 
 def load_metric_status(conn, hours, region="forest", placeholder="?"):
     region = normalize_region(region)
-    cutoff = (dt.datetime.now().astimezone() - dt.timedelta(hours=hours)).isoformat(
-        timespec="seconds"
-    )
+    cutoff_at = dt.datetime.now().astimezone() - dt.timedelta(hours=hours)
+    cutoff = cutoff_at.isoformat(timespec="seconds")
     query = """
         SELECT
-            COUNT(*) AS total_count,
-            COALESCE(SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END), 0) AS active_count,
-            COALESCE(SUM(CASE WHEN status = 'reported' THEN 1 ELSE 0 END), 0) AS reported_count,
-            COALESCE(SUM(CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN 1 ELSE 0 END), 0) AS mapped_count,
-            MAX(COALESCE(NULLIF(latest_observed_at, ''), NULLIF(last_seen, ''), NULLIF(first_seen, ''), '')) AS data_updated_at
+            status, source, source_reported_at, first_seen, last_seen,
+            latest_observed_at, latitude, longitude
         FROM events
         WHERE region = {placeholder}
           AND (
@@ -307,17 +304,18 @@ def load_metric_status(conn, hours, region="forest", placeholder="?"):
               OR cleared_at >= {placeholder}
           )
     """
-    row = conn.execute(
+    rows = conn.execute(
         query.format(placeholder=placeholder),
         (region, cutoff, cutoff, cutoff),
-    ).fetchone()
+    ).fetchall()
+    rows = [row for row in rows if archived_wildweb_in_window(dict(row), cutoff_at)]
     return {
-        "active_count": int(row["active_count"] or 0),
-        "reported_count": int(row["reported_count"] or 0),
-        "total_count": int(row["total_count"] or 0),
-        "mapped_count": int(row["mapped_count"] or 0),
+        "active_count": sum(row["status"] == "active" for row in rows),
+        "reported_count": sum(row["status"] == "reported" for row in rows),
+        "total_count": len(rows),
+        "mapped_count": sum(row["latitude"] is not None and row["longitude"] is not None for row in rows),
         "hours": hours,
-        "data_updated_at": row["data_updated_at"] or "",
+        "data_updated_at": max((row["latest_observed_at"] or row["last_seen"] or row["first_seen"] or "" for row in rows), default=""),
     }
 
 
