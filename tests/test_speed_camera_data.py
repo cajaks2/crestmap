@@ -1,4 +1,8 @@
 import json
+import shutil
+import subprocess
+
+import pytest
 
 from fastapi.testclient import TestClient
 
@@ -7,6 +11,7 @@ import speed_camera_data as cameras
 from app import WebSettings, create_app
 from scrape_chp_traffic import connect_database
 from serve_live_map import prometheus_metrics
+from speed_camera_ui import speed_camera_script
 
 
 class FakeResponse:
@@ -106,3 +111,69 @@ def test_camera_metrics_exist_before_first_pull(tmp_path):
     metrics = prometheus_metrics(tmp_path / "missing.sqlite", None, 72).decode()
     assert 'crestmap_speed_camera_arcgis_requests_total{layer="poles",outcome="success"} 0' in metrics
     assert 'crestmap_speed_camera_sites{kind="poles"} 0' in metrics
+
+
+def test_camera_markers_only_exist_near_the_map_view():
+    if not shutil.which("node"):
+        pytest.skip("Node is required for the camera marker runtime test")
+    script = f"""
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const cameraScript = {json.dumps(speed_camera_script())};
+let bounds = [34.5, 34.7, -118.2, -118.0];
+let zoom = 10;
+let created = 0;
+let removed = 0;
+let clusterClick;
+const listeners = {{}};
+const layer = {{ addTo() {{ return this; }}, clearLayers() {{}}, removeLayer() {{ removed++; }} }};
+const map = {{
+  createPane() {{ return {{ style: {{}} }}; }},
+  getBounds() {{ return {{ pad() {{ return {{ contains([lat, lon]) {{
+    return bounds[0] <= lat && lat <= bounds[1] && bounds[2] <= lon && lon <= bounds[3];
+  }} }}; }} }}; }},
+  getZoom() {{ return zoom; }},
+  project([lat, lon]) {{ return {{ x: lon * 100, y: lat * 100 }}; }},
+  setView(_center, newZoom) {{ zoom = newZoom; listeners.moveend(); }},
+  on(name, callback) {{ listeners[name] = callback; }},
+}};
+const toggle = {{ classList: {{ toggle() {{}} }}, setAttribute() {{}},
+  querySelector() {{ return {{ textContent: '' }}; }}, addEventListener() {{}} }};
+const sites = Array.from({{ length: 246 }}, (_, index) => ({{
+  name: 'Camera ' + index, status: 'Under Construction',
+  latitude: index < 2 ? 34.3 : 33.7,
+  longitude: index < 2 ? -118.1 : -118.5,
+}}));
+const context = {{ map, currentRegion: 'forest', escapeHtml: (value) => value,
+  document: {{ querySelector() {{ return toggle; }}, addEventListener() {{}} }},
+  window: {{ localStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
+    addEventListener() {{}}, setInterval() {{}} }},
+  fetch: async () => ({{ ok: true, json: async () => ({{ sites, stale: false }}) }}),
+  L: {{ layerGroup: () => layer, divIcon: (options) => options,
+    marker: () => {{ created++; return {{ bindPopup() {{ return this; }},
+      on(_event, callback) {{ clusterClick = callback; return this; }},
+      addTo() {{ return this; }} }}; }},
+    DomEvent: {{ disableClickPropagation() {{}} }},
+  }},
+}};
+vm.runInNewContext(cameraScript, context);
+setImmediate(() => {{
+  assert.equal(created, 0);
+  bounds = [34.2, 34.4, -118.2, -118.0];
+  listeners.moveend();
+  assert.equal(created, 1);
+  listeners.moveend();
+  assert.equal(created, 1);
+  clusterClick();
+  assert.equal(zoom, 12);
+  assert.equal(created, 3);
+  assert.equal(removed, 1);
+  bounds = [33.5, 34.4, -118.7, -118.0];
+  listeners.moveend();
+  assert.ok(created < 10, 'wide views remain grouped even after zooming');
+  bounds = [34.5, 34.7, -118.2, -118.0];
+  listeners.moveend();
+  assert.ok(removed >= 3);
+}});
+"""
+    subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)

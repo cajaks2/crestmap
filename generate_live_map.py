@@ -2533,6 +2533,20 @@ def build_html(
     }}
     .speed-camera-site.is-live .speed-camera-lens {{ fill: #e27631; }}
     .speed-camera-site.is-planned .speed-camera-lens {{ fill: #f7d04b; }}
+    .speed-camera-cluster {{
+      position: relative; display: block; width: 30px; height: 24px;
+    }}
+    .speed-camera-cluster .speed-camera-site {{
+      position: absolute; left: 4px; top: 0;
+    }}
+    .speed-camera-count {{
+      position: absolute; right: 0; bottom: 0;
+      min-width: 16px; height: 16px; padding: 0 2px;
+      border: 1px solid #17212b; border-radius: 8px;
+      background: #f7d04b; color: #17212b;
+      font: 700 10px/14px system-ui, sans-serif; text-align: center;
+      box-shadow: 0 1px 3px #17212b55;
+    }}
     .speed-camera-popup {{
       position: absolute;
       text-align: left;

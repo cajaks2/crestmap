@@ -27,19 +27,23 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
       let laStale = false;
       let fetchedAt = 0;
       let loading = false;
+      const markers = new Map();
+      function cameraGraphic(state) {
+        return `<span class="speed-camera-site is-${state}" aria-hidden="true">` +
+          `<svg viewBox="0 0 24 24" focusable="false">` +
+          `<path class="speed-camera-warning" d="M12 2 22 20H2Z"/>` +
+          `<path class="speed-camera-glyph" d="M7 11.5h2l1-1.3h4l1 1.3h2V17H7Z"/>` +
+          `<circle class="speed-camera-lens" cx="12" cy="14.2" r="1.6"/></svg></span>`;
+      }
+      const iconForStatus = Object.fromEntries(["live", "planned"].map((state) => [state, L.divIcon({
+        className: "",
+        html: cameraGraphic(state),
+        iconSize: [20, 20], iconAnchor: [10, 10], popupAnchor: [0, -12],
+      })]));
 
       function addSite(name, latitude, longitude, status, source, approximate, direction = "", side = "") {
         const live = status === "Warning Live" || status === "Enforcement Live";
-        const stateClass = live ? "is-live" : "is-planned";
-        const icon = L.divIcon({
-          className: "",
-          html: `<span class="speed-camera-site ${stateClass}" aria-hidden="true">` +
-            `<svg viewBox="0 0 24 24" focusable="false">` +
-            `<path class="speed-camera-warning" d="M12 2 22 20H2Z"/>` +
-            `<path class="speed-camera-glyph" d="M7 11.5h2l1-1.3h4l1 1.3h2V17H7Z"/>` +
-            `<circle class="speed-camera-lens" cx="12" cy="14.2" r="1.6"/></svg></span>`,
-          iconSize: [20, 20], iconAnchor: [10, 10], popupAnchor: [0, -12],
-        });
+        const icon = iconForStatus[live ? "live" : "planned"];
         const description = approximate
           ? "Approximate intersection; exact camera position is unpublished."
           : "LADOT planned mounting point; installed position may differ.";
@@ -47,20 +51,79 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
           (direction ? `<br>Enforces ${escapeHtml(direction)} traffic` : "") +
           (side ? `<br>Mounted on ${escapeHtml(side)} side` : "") +
           `<br>${description}<br><a href="${source}" target="_blank" rel="noopener">Official source</a>`;
-        L.marker([latitude, longitude], { pane: "speedCameraSites", icon, title: `${name} · ${status}` })
+        return L.marker([latitude, longitude], { pane: "speedCameraSites", icon, title: `${name} · ${status}` })
           .bindPopup(popup, { className: "speed-camera-popup", maxWidth: 250 }).addTo(layer);
       }
 
+      function addCluster(group) {
+        const center = [group.latitude / group.count, group.longitude / group.count];
+        const icon = L.divIcon({
+          className: "",
+          html: `<span class="speed-camera-cluster" aria-hidden="true">${cameraGraphic("planned")}` +
+            `<span class="speed-camera-count">${group.count}</span></span>`,
+          iconSize: [30, 24], iconAnchor: [15, 12],
+        });
+        return L.marker(center, { pane: "speedCameraSites", icon,
+          title: `${group.count} LA speed cameras · zoom in for details` })
+          .on("click", () => map.setView(center, Math.max(12, map.getZoom() + 1)))
+          .addTo(layer);
+      }
+
       function render() {
-        layer.clearLayers();
-        if (!visible) return;
-        if (currentRegion === "malibu") {
-          malibuSites.forEach(([name, lat, lon]) =>
-            addSite(`PCH at ${name}`, lat, lon, "Testing / planned", malibuSource, true));
+        if (!visible) {
+          layer.clearLayers();
+          markers.clear();
+          return;
         }
-        laSites.forEach((site) =>
-          addSite(site.name, site.latitude, site.longitude, site.status, laSource, false,
-            site.direction, site.side));
+        const nearby = map.getBounds().pad(0.25);
+        const wanted = new Set();
+        const visibleLaSites = laSites.map((site, index) => [site, index])
+          .filter(([site]) => nearby.contains([site.latitude, site.longitude]));
+        const clustered = map.getZoom() < 12 || visibleLaSites.length > 80;
+        const clusterCell = 72 * 2 ** Math.max(0, map.getZoom() - 12);
+        const groups = new Map();
+        if (currentRegion === "malibu") {
+          malibuSites.forEach(([name, lat, lon], index) => {
+            if (!nearby.contains([lat, lon])) return;
+            const key = `malibu-${index}`;
+            wanted.add(key);
+            if (!markers.has(key)) markers.set(key,
+              addSite(`PCH at ${name}`, lat, lon, "Testing / planned", malibuSource, true));
+          });
+        }
+        visibleLaSites.forEach(([site, index]) => {
+          if (clustered) {
+            const point = map.project([site.latitude, site.longitude], map.getZoom());
+            const key = `cluster-${map.getZoom()}-${Math.floor(point.x / clusterCell)}-${Math.floor(point.y / clusterCell)}`;
+            if (!groups.has(key)) groups.set(key, { count: 0, latitude: 0,
+              longitude: 0, first: index, indices: [] });
+            const group = groups.get(key);
+            group.count++;
+            group.latitude += site.latitude;
+            group.longitude += site.longitude;
+            group.indices.push(index);
+            return;
+          }
+          const key = `la-${index}`;
+          wanted.add(key);
+          if (!markers.has(key)) markers.set(key,
+            addSite(site.name, site.latitude, site.longitude, site.status, laSource, false,
+              site.direction, site.side));
+        });
+        groups.forEach((group, key) => {
+          const markerKey = `${key}-${group.indices.join("-")}`;
+          wanted.add(markerKey);
+          if (!markers.has(markerKey)) markers.set(markerKey, group.count === 1
+            ? addSite(laSites[group.first].name, laSites[group.first].latitude,
+              laSites[group.first].longitude, laSites[group.first].status, laSource, false,
+              laSites[group.first].direction, laSites[group.first].side)
+            : addCluster(group));
+        });
+        markers.forEach((marker, key) => {
+          if (wanted.has(key)) return;
+          layer.removeLayer(marker);
+          markers.delete(key);
+        });
       }
 
       function updateToggle() {
@@ -87,6 +150,8 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
           laSites = payload.sites;
           laStale = Boolean(payload.stale);
           fetchedAt = Date.now();
+          layer.clearLayers();
+          markers.clear();
           render();
           updateToggle();
         } catch (_error) {
@@ -111,6 +176,7 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
         if (document.visibilityState === "visible") refresh();
       });
       window.setInterval(refresh, 5 * 60 * 1000);
+      map.on("moveend", render);
       render();
       updateToggle();
       refresh();

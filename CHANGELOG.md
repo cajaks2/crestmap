@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.329 - 2026-10-27
+
+- Group nearby Los Angeles speed cameras at wide map zoom levels, showing a camera warning icon with a count. Clicking a group zooms to individual camera sites. Render only markers near the visible map area and reuse existing markers while panning.
+- No schema migration or reauthentication is required.
+
 ### 0.1.328 - 2026-10-27
 
 - Serve LADOT speed cameras from a shared web cache, limiting ArcGIS pulls to one refresh per five minutes and preserving recent data during upstream failures. Remove direct browser requests to ArcGIS.
