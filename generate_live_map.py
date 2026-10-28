@@ -2648,6 +2648,10 @@ def build_html(
       border-radius: 8px;
       background: #e8ece6;
     }}
+    .camera-image-link[hidden],
+    .camera-image[hidden] {{
+      display: none;
+    }}
     .camera-image.is-unavailable {{
       min-height: 150px;
       object-fit: contain;
@@ -3894,6 +3898,7 @@ def build_html(
     let selectedCameraId = new URLSearchParams(window.location.search).get("camera");
     let selectedCamera = null;
     let cameraImageRefreshTimer = null;
+    let cameraImageRequest = null;
     const listShell = document.getElementById("incident-list-shell");
     const list = document.getElementById("incident-list");
     const incidentSearch = document.getElementById("incident-search");
@@ -5244,8 +5249,8 @@ def build_html(
               <div class="meta">${{escapeHtml(currentRegion === "malibu" ? "Malibu area" : "Forest area")}}</div>
             </div>
           </div>
-          ${{online ? `<a class="camera-image-link" data-camera-image-link href="${{escapeHtml(cameraImageUrl(camera))}}" rel="noopener" target="_blank" aria-label="Open full-size current view from ${{escapeHtml(camera.name || "ALERTCalifornia camera")}}" title="Open full-size image"><img class="camera-image" data-camera-image src="${{escapeHtml(cameraImageUrl(camera))}}" alt="Current view from ${{escapeHtml(camera.name || "ALERTCalifornia camera")}}"></a>` : ""}}
-          <div class="empty" data-camera-image-error${{online ? " hidden" : ""}}>Current camera image is unavailable.</div>
+          ${{online ? `<a class="camera-image-link" data-camera-image-link hidden rel="noopener" target="_blank" aria-label="Open full-size current view from ${{escapeHtml(camera.name || "ALERTCalifornia camera")}}" title="Open full-size image"><img class="camera-image" data-camera-image alt="Current view from ${{escapeHtml(camera.name || "ALERTCalifornia camera")}}"></a>` : ""}}
+          <div class="empty" data-camera-image-error>${{online ? "Loading camera image…" : "Current camera image is unavailable."}}</div>
           <div class="camera-image-meta"><span>Updated ${{escapeHtml(formatCameraUpdatedAt(camera))}}</span><span>${{online ? "Refreshes every 10s" : "Offline"}}</span></div>
           <div class="camera-quick-facts"><span>Facing ${{escapeHtml(cameraDirectionLabel(bearing))}}</span><span>${{Number.isFinite(elevation) ? `${{Math.round(elevation)}} m elevation` : "Elevation unknown"}}</span></div>
           <p class="camera-credit">ALERTCalifornia | UC San Diego</p>
@@ -5274,30 +5279,68 @@ def build_html(
     }}
 
     function refreshSelectedCameraImage() {{
-      if (!selectedCamera || !cameraIsOnline(selectedCamera)) return;
+      if (!selectedCamera || !cameraIsOnline(selectedCamera) || cameraImageRequest) return;
       const image = detailsPanel.querySelector("[data-camera-image]");
       const imageLink = detailsPanel.querySelector("[data-camera-image-link]");
       const error = detailsPanel.querySelector("[data-camera-image-error]");
       if (!image) return;
-      image.onerror = () => {{
-        image.hidden = true;
-        if (error) error.hidden = false;
-      }};
-      image.onload = () => {{
-        image.hidden = false;
-        if (error) error.hidden = true;
-      }};
       const refreshedImageUrl = cameraImageUrl(selectedCamera);
-      image.src = refreshedImageUrl;
-      if (imageLink) imageLink.href = refreshedImageUrl;
-      if (!cameraLightbox?.hidden && cameraLightbox.dataset.cameraId === selectedCamera.id && cameraLightboxImage) {{
-        cameraLightboxImage.src = refreshedImageUrl;
-      }}
+      const request = {{ cameraId: selectedCamera.id, image: new Image() }};
+      cameraImageRequest = request;
+      request.timeout = window.setTimeout(() => {{
+        if (cameraImageRequest !== request) return;
+        request.image.onload = null;
+        request.image.onerror = null;
+        request.image.src = "";
+        if (error && imageLink?.hidden) error.textContent = "Camera image could not load. Retrying automatically…";
+        cameraImageRequest = null;
+      }}, 20000);
+      request.image.onload = async () => {{
+        try {{
+          if (request.image.decode) await request.image.decode();
+          if (cameraImageRequest !== request || selectedCamera?.id !== request.cameraId) return;
+          request.image.className = "camera-image";
+          request.image.dataset.cameraImage = "";
+          request.image.alt = image.alt;
+          image.replaceWith(request.image);
+          if (imageLink) {{
+            imageLink.href = refreshedImageUrl;
+            imageLink.hidden = false;
+          }}
+          if (error) error.hidden = true;
+          if (!cameraLightbox?.hidden && cameraLightbox.dataset.cameraId === request.cameraId && cameraLightboxImage) {{
+            cameraLightboxImage.src = refreshedImageUrl;
+          }}
+        }} catch (_error) {{
+          if (cameraImageRequest === request && error && imageLink?.hidden) {{
+            error.textContent = "Camera image could not load. Retrying automatically…";
+          }}
+        }} finally {{
+          if (cameraImageRequest === request) {{
+            window.clearTimeout(request.timeout);
+            cameraImageRequest = null;
+          }}
+        }}
+      }};
+      request.image.onerror = () => {{
+        if (cameraImageRequest !== request) return;
+        if (error && imageLink?.hidden) error.textContent = "Camera image could not load. Retrying automatically…";
+        window.clearTimeout(request.timeout);
+        cameraImageRequest = null;
+      }};
+      request.image.src = refreshedImageUrl;
     }}
 
     function stopCameraImageRefresh() {{
       if (cameraImageRefreshTimer) window.clearInterval(cameraImageRefreshTimer);
       cameraImageRefreshTimer = null;
+      if (cameraImageRequest) {{
+        window.clearTimeout(cameraImageRequest.timeout);
+        cameraImageRequest.image.onload = null;
+        cameraImageRequest.image.onerror = null;
+        cameraImageRequest.image.src = "";
+        cameraImageRequest = null;
+      }}
     }}
 
     function clearCameraSelection() {{

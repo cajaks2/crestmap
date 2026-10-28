@@ -431,8 +431,14 @@ def test_build_html_adds_directional_alertcalifornia_camera_layer():
     assert "ALERTCalifornia | UC San Diego" in html
     assert "Open source" not in html
     assert 'class="camera-image-link" data-camera-image-link' in html
+    assert 'class="camera-image-link" data-camera-image-link hidden' in html
+    assert 'data-camera-image src=' not in html
+    assert 'if (!selectedCamera || !cameraIsOnline(selectedCamera) || cameraImageRequest) return;' in html
+    assert 'if (request.image.decode) await request.image.decode();' in html
+    assert 'image.replaceWith(request.image);' in html
+    assert 'Camera image could not load. Retrying automatically' in html
     assert 'title="Open full-size image"' in html
-    assert "if (imageLink) imageLink.href = refreshedImageUrl" in html
+    assert "imageLink.href = refreshedImageUrl;" in html
     assert 'id="camera-lightbox"' in html
     assert "function openCameraLightbox(camera, imageUrl, trigger = null)" in html
     assert "function openMediaLightbox(" in html

@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.335 - 2026-10-28
+
+- Load ALERTCalifornia camera frames fully before showing them, prevent overlapping 10-second refreshes, and retry failed or stalled first loads without closing the pane. Preserve the previous frame during a refresh.
+- No schema migration or reauthentication is required.
+
 ### 0.1.334 - 2026-10-28
 
 - Keep the last successful LADOT speed camera snapshot on disk across web restarts, so a transient ArcGIS failure does not leave Los Angeles cameras absent from the map.
