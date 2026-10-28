@@ -465,10 +465,11 @@ def test_speed_camera_sites_are_separate_from_fire_cameras():
 
     assert 'data-speed-camera-layer-toggle' in malibu_html
     assert 'data-speed-camera-layer-toggle' in forest_html
-    assert 'Los Angeles sites' in forest_html
+    assert 'Los Angeles County programs' in forest_html
+    assert 'Los Angeles County programs' in malibu_html
     assert 'const cameraEndpoint = "/api/v1/speed-cameras"' in forest_html
     assert "services.arcgis.com" not in forest_html
-    assert 'if (currentRegion === "malibu") {' in forest_html
+    assert 'malibuSites.forEach' in forest_html
     assert 'data-camera-layer-toggle' in malibu_html
     assert 'class="speed-camera-warning" d="M12 2 22 20H2Z"' in malibu_html
     assert 'class="speed-camera-glyph"' in malibu_html
@@ -476,6 +477,14 @@ def test_speed_camera_sites_are_separate_from_fire_cameras():
     assert '.speed-camera-site.is-planned .speed-camera-warning { fill: #f7d04b; }' in malibu_html
     assert 'Approximate intersection; exact camera position is unpublished.' in malibu_html
     assert 'LADOT planned mounting point; installed position may differ.' in malibu_html
+    assert 'Glendale: ${name}' in forest_html
+    assert 'Proposed; activation unconfirmed' in forest_html
+    assert "Approximate block from Glendale's impact report; exact camera position is unpublished." in forest_html
+    assert 'glendaleSites.forEach' in forest_html
+    assert 'glendaleSites.forEach' in malibu_html
+    assert 'longBeachSites.forEach' in forest_html
+    assert 'longBeachSites.forEach' in malibu_html
+    assert 'Published corridor; activation varies' in forest_html
     assert 'const cameraEndpoint = "/api/v1/speed-cameras"' in malibu_html
     assert 'Enforces ${escapeHtml(direction)} traffic' in malibu_html
     assert '"crestmap-speed-camera-layer"' in malibu_html

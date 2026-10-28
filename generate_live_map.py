@@ -1151,10 +1151,7 @@ def map_layer_menu(region="forest", aircraft_tracking_enabled=False):
         'aria-pressed="true"><span class="view-menu-label">Fire cameras</span>'
         '<span class="view-menu-description">ALERTCalifornia cameras</span><span class="map-layer-switch" aria-hidden="true"></span></button>',
     ]
-    speed_camera_description = (
-        "Malibu + Los Angeles sites" if normalize_region(region) == "malibu"
-        else "Los Angeles sites"
-    )
+    speed_camera_description = "Los Angeles County programs"
     rows.append(
         '<button type="button" class="view-menu-row is-active" data-speed-camera-layer-toggle '
         'aria-label="Toggle speed camera sites" aria-pressed="true">'

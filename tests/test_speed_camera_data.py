@@ -126,6 +126,7 @@ let bounds = [34.5, 34.7, -118.2, -118.0];
 let zoom = 10;
 let created = 0;
 let removed = 0;
+const markerTitles = [];
 let clusterClick;
 let clusterTitle = '';
 const listeners = {{}};
@@ -154,7 +155,8 @@ const context = {{ map, currentRegion: 'forest', escapeHtml: (value) => value,
     addEventListener() {{}}, setInterval() {{}} }},
   fetch: async () => ({{ ok: true, json: async () => ({{ sites, location_count: 245, stale: false }}) }}),
   L: {{ layerGroup: () => layer, divIcon: (options) => options,
-    marker: (_point, options) => {{ created++; if (options.title.includes('zoom in')) clusterTitle = options.title;
+    marker: (_point, options) => {{ created++; markerTitles.push(options.title);
+      if (options.title.includes('zoom in')) clusterTitle = options.title;
       return {{ bindPopup() {{ return this; }},
       on(_event, callback) {{ clusterClick = callback; return this; }},
       addTo() {{ return this; }} }}; }},
@@ -176,7 +178,10 @@ setImmediate(() => {{
   assert.equal(removed, 1);
   bounds = [33.5, 34.4, -118.7, -118.0];
   listeners.moveend();
-  assert.ok(created < 10, 'wide views remain grouped even after zooming');
+  assert.equal(markerTitles.filter((title) => title.startsWith('Glendale:')).length, 9);
+  assert.equal(markerTitles.filter((title) => title.startsWith('Long Beach:')).length, 18);
+  assert.equal(markerTitles.filter((title) => title.startsWith('Malibu:')).length, 2);
+  assert.ok(created < 40, 'wide views keep LA mounting points grouped');
   bounds = [34.5, 34.7, -118.2, -118.0];
   listeners.moveend();
   assert.ok(removed >= 3);

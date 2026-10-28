@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.331 - 2026-10-28
+
+- Show the published speed enforcement programs across Los Angeles County on both map views: add nine Glendale corridors and 18 Long Beach corridors, and make the five Malibu sites visible from either region. Mark the newly mapped corridor points as approximate, link each popup to the issuing city's report, and distinguish published locations from confirmed activation.
+- No schema migration or reauthentication is required.
+
 ### 0.1.330 - 2026-10-27
 
 - Label LADOT's 125 speed camera locations separately from the 246 published camera mounting points. Low-zoom camera groups now count locations; zooming in still shows each published mounting point.
