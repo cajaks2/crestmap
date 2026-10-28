@@ -79,6 +79,41 @@ def test_server_cache_limits_arcgis_requests_and_preserves_stale_data(monkeypatc
     cameras.reset_for_tests()
 
 
+def test_camera_snapshot_survives_web_restart(tmp_path, monkeypatch):
+    cache_file = tmp_path / "speed-cameras.json"
+    monkeypatch.setenv("SPEED_CAMERA_CACHE_FILE", str(cache_file))
+    now = [1000.0]
+    monkeypatch.setattr(cameras.time, "time", lambda: now[0])
+    layers = {
+        "systems": {"features": [feature(-118.5, 34.0, System="Warning Live")]},
+        "poles": {"features": [feature(-118.5001, 34.0, PairID="1", Primary_Street="Main St")]},
+    }
+
+    def available(request, timeout):
+        layer = "systems" if "CameraSystemLabels" in request.full_url else "poles"
+        return FakeResponse(layers[layer])
+
+    cameras.reset_for_tests()
+    monkeypatch.setattr(cameras, "urlopen", available)
+    assert cameras.load_speed_cameras()["stale"] is False
+    assert cache_file.is_file()
+
+    cameras.reset_for_tests()
+    now[0] += 301
+
+    def unavailable(_request, timeout):
+        raise OSError("upstream unavailable")
+
+    monkeypatch.setattr(cameras, "urlopen", unavailable)
+    restored = cameras.load_speed_cameras()
+    assert restored["stale"] is True
+    assert restored["location_count"] == 1
+    assert restored["sites"][0]["name"] == "Main St"
+    assert cameras.metrics_snapshot()["cache_total"]["disk_restore"] == 1
+    assert cameras.metrics_snapshot()["last_success"] == 1000.0
+    cameras.reset_for_tests()
+
+
 def test_speed_camera_api_and_metrics(tmp_path, monkeypatch):
     database = tmp_path / "camera.sqlite"
     connect_database(database).close()
@@ -106,6 +141,8 @@ def test_speed_camera_api_and_metrics(tmp_path, monkeypatch):
         response = client.get("/map/api/v1/speed-cameras")
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "speed_cameras_unavailable"
+        assert response.headers["Retry-After"] == "60"
+        assert response.headers["Cache-Control"] == "no-store"
 
 
 def test_camera_metrics_exist_before_first_pull(tmp_path):
@@ -113,6 +150,7 @@ def test_camera_metrics_exist_before_first_pull(tmp_path):
     metrics = prometheus_metrics(tmp_path / "missing.sqlite", None, 72).decode()
     assert 'crestmap_speed_camera_arcgis_requests_total{layer="poles",outcome="success"} 0' in metrics
     assert 'crestmap_speed_camera_sites{kind="poles"} 0' in metrics
+    assert 'crestmap_speed_camera_cache_events_total{event="disk_restore"} 0' in metrics
 
 
 def test_camera_markers_only_exist_near_the_map_view():
@@ -169,7 +207,7 @@ setImmediate(() => {{
   bounds = [34.2, 34.4, -118.2, -118.0];
   listeners.moveend();
   assert.equal(created, 1);
-  assert.ok(clusterTitle.startsWith('1 speed camera location'));
+  assert.ok(clusterTitle.startsWith('1 Los Angeles speed camera location'));
   listeners.moveend();
   assert.equal(created, 1);
   clusterClick();
@@ -180,8 +218,16 @@ setImmediate(() => {{
   listeners.moveend();
   assert.equal(markerTitles.filter((title) => title.startsWith('Glendale:')).length, 0);
   assert.equal(markerTitles.filter((title) => title.startsWith('Long Beach:')).length, 0);
-  assert.ok(markerTitles.some((title) => title.includes('speed camera locations · zoom in')));
-  assert.ok(created < 10, 'wide views group all county camera sites');
+  assert.ok(markerTitles.some((title) => title.includes('Los Angeles speed camera locations · zoom in')));
+  assert.ok(markerTitles.some((title) => title.includes('Glendale speed camera locations · zoom in')));
+  assert.ok(markerTitles.some((title) => title.includes('Long Beach speed camera locations · zoom in')));
+  assert.ok(created < 12, 'wide views group each city separately');
+  const laMountsBeforeCloseZoom = markerTitles.filter((title) => title.startsWith('Los Angeles:')).length;
+  zoom = 14;
+  bounds = [34.2, 34.4, -118.2, -118.0];
+  listeners.moveend();
+  assert.equal(markerTitles.filter((title) => title.startsWith('Los Angeles:')).length,
+    laMountsBeforeCloseZoom + 2);
   bounds = [34.13, 34.18, -118.31, -118.22];
   listeners.moveend();
   assert.equal(markerTitles.filter((title) => title.startsWith('Glendale:')).length, 9);
@@ -194,6 +240,65 @@ setImmediate(() => {{
   bounds = [34.5, 34.7, -118.2, -118.0];
   listeners.moveend();
   assert.ok(removed >= 3);
+}});
+"""
+    subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+
+
+def test_camera_layer_recovers_after_initial_api_failure():
+    if not shutil.which("node"):
+        pytest.skip("Node is required for the camera retry runtime test")
+    script = f"""
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const cameraScript = {json.dumps(speed_camera_script())};
+let fetches = 0;
+let retry;
+let retryDelay;
+const titles = [];
+const layer = {{ addTo() {{ return this; }}, clearLayers() {{}}, removeLayer() {{}} }};
+const map = {{
+  createPane() {{ return {{ style: {{}} }}; }},
+  getBounds() {{ return {{ pad() {{ return {{ contains([lat, lon]) {{
+    return lat >= 34.2 && lat <= 34.4 && lon >= -118.2 && lon <= -118.0;
+  }} }}; }} }}; }},
+  getZoom() {{ return 14; }},
+  project() {{ return {{ x: 0, y: 0 }}; }},
+  on() {{}},
+}};
+const toggle = {{ classList: {{ toggle() {{}} }}, setAttribute() {{}},
+  querySelector() {{ return {{ textContent: '' }}; }}, addEventListener() {{}} }};
+const context = {{ map, currentRegion: 'forest', escapeHtml: (value) => value,
+  document: {{ querySelector() {{ return toggle; }}, addEventListener() {{}} }},
+  window: {{ localStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
+    addEventListener() {{}}, setInterval() {{}},
+    setTimeout(callback, delay) {{ retry = callback; retryDelay = delay; return 1; }},
+    clearTimeout() {{}} }},
+  fetch: async () => {{
+    fetches++;
+    if (fetches === 1) return {{ ok: false, headers: {{ get: () => '60' }} }};
+    return {{ ok: true, json: async () => ({{ sites: [{{
+      name: 'Main St', pair_id: '1', status: 'Warning Live',
+      latitude: 34.3, longitude: -118.1,
+    }}], location_count: 1, stale: false }}) }};
+  }},
+  L: {{ layerGroup: () => layer, divIcon: (options) => options,
+    marker: (_point, options) => {{ titles.push(options.title);
+      return {{ bindPopup() {{ return this; }}, on() {{ return this; }}, addTo() {{ return this; }} }};
+    }},
+    DomEvent: {{ disableClickPropagation() {{}} }},
+  }},
+}};
+vm.runInNewContext(cameraScript, context);
+setImmediate(() => {{
+  assert.equal(fetches, 1);
+  assert.equal(retryDelay, 60000);
+  assert.equal(titles.length, 0);
+  retry();
+  setImmediate(() => {{
+    assert.equal(fetches, 2);
+    assert.deepEqual(titles, ['Los Angeles: Main St · Warning Live']);
+  }});
 }});
 """
     subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)

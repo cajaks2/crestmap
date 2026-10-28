@@ -7,3 +7,4 @@ __pycache__/
 *.sqlite-*
 live_chp_map.html
 .DS_Store
+deploy/digitalocean/cache/

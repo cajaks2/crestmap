@@ -1295,7 +1295,9 @@ def dispatch_request(request, send_body=True):
         try:
             payload = load_speed_cameras()
         except SpeedCameraUnavailable:
-            return api_error("speed cameras are unavailable", "speed_cameras_unavailable", 503, send_body)
+            response = api_error("speed cameras are unavailable", "speed_cameras_unavailable", 503, send_body)
+            response.headers["Retry-After"] = "60"
+            return response
         cache_control = "public, max-age=60" if not payload["stale"] else "public, max-age=30"
         return json_response(payload, cache_control=cache_control, send_body=send_body)
 

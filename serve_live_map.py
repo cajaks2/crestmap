@@ -848,7 +848,7 @@ def prometheus_metrics(database, database_url, hours, conn=None, pool_stats=None
         "# HELP crestmap_speed_camera_cache_events_total Server camera cache events by type.",
         "# TYPE crestmap_speed_camera_cache_events_total counter",
     ])
-    for event in ("hit", "miss", "stale", "retry_suppressed"):
+    for event in ("hit", "miss", "stale", "retry_suppressed", "disk_restore", "disk_write_failure"):
         lines.append(metric_line("crestmap_speed_camera_cache_events_total", camera["cache_total"].get(event, 0), {"event": event}))
     lines.extend([
         "# HELP crestmap_speed_camera_arcgis_last_duration_seconds Duration of the latest ArcGIS snapshot refresh.",

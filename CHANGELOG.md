@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.334 - 2026-10-28
+
+- Keep the last successful LADOT speed camera snapshot on disk across web restarts, so a transient ArcGIS failure does not leave Los Angeles cameras absent from the map.
+- Retry a failed LA camera request automatically, show its retry state in the layer menu, and honor the API's retry interval. Keep each city's camera clusters distinct and reveal Los Angeles camera mounting points at close zoom.
+- Expose disk cache restore and write failure metrics. No schema migration or reauthentication is required.
+
 ### 0.1.333 - 2026-10-28
 
 - Enlarge the Newcomb's Ranch wood-sign tile and its lettering in the temperature badge, with extra room for the temperature reading and map label placement.

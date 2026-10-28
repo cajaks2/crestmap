@@ -65,6 +65,7 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
       let laStale = false;
       let fetchedAt = 0;
       let loading = false;
+      let retryTimer = null;
       const markers = new Map();
       function cameraGraphic(state) {
         return `<span class="speed-camera-site is-${state}" aria-hidden="true">` +
@@ -102,7 +103,7 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
           iconSize: [30, 24], iconAnchor: [15, 12],
         });
         return L.marker(center, { pane: "speedCameraSites", icon,
-          title: `${group.count} speed camera ${group.count === 1 ? "location" : "locations"} · zoom in for camera positions` })
+          title: `${group.count} ${group.program} speed camera ${group.count === 1 ? "location" : "locations"} · zoom in for camera positions` })
           .on("click", () => map.setView(center, Math.max(12, map.getZoom() + 1)))
           .addTo(layer);
       }
@@ -117,14 +118,14 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
         const wanted = new Set();
         const visibleLaSites = laSites.map((site, index) => [site, index])
           .filter(([site]) => nearby.contains([site.latitude, site.longitude]));
-        const clustered = map.getZoom() < 12 || visibleLaSites.length > 80;
-        const clusterCell = 72 * 2 ** Math.max(0, map.getZoom() - 12);
+        const clustered = map.getZoom() < 12 || (map.getZoom() < 14 && visibleLaSites.length > 80);
+        const clusterCell = 72;
         const groups = new Map();
-        function queueLocation(id, latitude, longitude) {
+        function queueLocation(id, latitude, longitude, program) {
           const point = map.project([latitude, longitude], map.getZoom());
-          const key = `cluster-${map.getZoom()}-${Math.floor(point.x / clusterCell)}-${Math.floor(point.y / clusterCell)}`;
+          const key = `cluster-${map.getZoom()}-${program}-${Math.floor(point.x / clusterCell)}-${Math.floor(point.y / clusterCell)}`;
           if (!groups.has(key)) groups.set(key,
-            { count: 0, latitude: 0, longitude: 0, ids: [] });
+            { count: 0, latitude: 0, longitude: 0, ids: [], program });
           const group = groups.get(key);
           group.count++;
           group.latitude += latitude;
@@ -134,7 +135,7 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
         malibuSites.forEach(([name, lat, lon], index) => {
           if (!nearby.contains([lat, lon])) return;
           const key = `malibu-${index}`;
-          if (clustered) { queueLocation(key, lat, lon); return; }
+          if (clustered) { queueLocation(key, lat, lon, "Malibu"); return; }
           wanted.add(key);
           if (!markers.has(key)) markers.set(key,
             addSite(`Malibu: PCH at ${name}`, lat, lon, "Testing / planned", malibuSource, true));
@@ -142,7 +143,7 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
         glendaleSites.forEach(([name, lat, lon], index) => {
           if (!nearby.contains([lat, lon])) return;
           const key = `glendale-${index}`;
-          if (clustered) { queueLocation(key, lat, lon); return; }
+          if (clustered) { queueLocation(key, lat, lon, "Glendale"); return; }
           wanted.add(key);
           if (!markers.has(key)) markers.set(key,
             addSite(`Glendale: ${name}`, lat, lon, "Proposed; activation unconfirmed",
@@ -152,7 +153,7 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
         longBeachSites.forEach(([name, lat, lon], index) => {
           if (!nearby.contains([lat, lon])) return;
           const key = `long-beach-${index}`;
-          if (clustered) { queueLocation(key, lat, lon); return; }
+          if (clustered) { queueLocation(key, lat, lon, "Long Beach"); return; }
           wanted.add(key);
           if (!markers.has(key)) markers.set(key,
             addSite(`Long Beach: ${name}`, lat, lon, "Published corridor; activation varies",
@@ -173,14 +174,14 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
           locations.forEach((location, pairId) => {
             const latitude = location.latitude / location.poles;
             const longitude = location.longitude / location.poles;
-            queueLocation(`la-${pairId}`, latitude, longitude);
+            queueLocation(`la-${pairId}`, latitude, longitude, "Los Angeles");
           });
         } else {
           visibleLaSites.forEach(([site, index]) => {
             const key = `la-${index}`;
             wanted.add(key);
             if (!markers.has(key)) markers.set(key,
-              addSite(site.name, site.latitude, site.longitude, site.status, laSource, false,
+              addSite(`Los Angeles: ${site.name}`, site.latitude, site.longitude, site.status, laSource, false,
                 site.direction, site.side));
           });
         }
@@ -209,9 +210,14 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
       async function refresh() {
         if (!visible || loading || Date.now() - fetchedAt < 5 * 60 * 1000) return;
         loading = true;
+        let retryDelay = 15 * 1000;
         try {
           const response = await fetch(cameraEndpoint);
-          if (!response.ok) throw new Error("LADOT data unavailable");
+          if (!response.ok) {
+            const retryAfter = Number(response.headers?.get?.("Retry-After"));
+            if (retryAfter > 0) retryDelay = Math.min(60 * 1000, Math.max(15 * 1000, retryAfter * 1000));
+            throw new Error("LADOT data unavailable");
+          }
           const payload = await response.json();
           if (!Array.isArray(payload.sites)) {
             throw new Error("Invalid LADOT data");
@@ -220,6 +226,8 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
           laLocationCount = Number(payload.location_count) || 0;
           laStale = Boolean(payload.stale);
           fetchedAt = Date.now();
+          if (retryTimer !== null) window.clearTimeout(retryTimer);
+          retryTimer = null;
           layer.clearLayers();
           markers.clear();
           render();
@@ -228,7 +236,11 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
           const description = toggle.querySelector(".view-menu-description");
           if (description && visible) description.textContent =
             `${glendaleSites.length} Glendale · ${longBeachSites.length} Long Beach · ` +
-            `${malibuSites.length} Malibu · LA unavailable`;
+            `${malibuSites.length} Malibu · LA ${laSites.length ? "refresh delayed" : "retrying"}`;
+          if (visible && retryTimer === null) retryTimer = window.setTimeout(() => {
+            retryTimer = null;
+            refresh();
+          }, retryDelay);
         } finally {
           loading = false;
         }
@@ -237,6 +249,10 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
       L.DomEvent.disableClickPropagation(toggle);
       toggle.addEventListener("click", () => {
         visible = !visible;
+        if (!visible && retryTimer !== null) {
+          window.clearTimeout(retryTimer);
+          retryTimer = null;
+        }
         window.localStorage.setItem("crestmap-speed-camera-layer", visible ? "shown" : "hidden");
         render();
         updateToggle();

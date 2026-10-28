@@ -4,6 +4,8 @@ from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 import json
 import math
+import os
+from pathlib import Path
 import threading
 import time
 from urllib.request import Request, urlopen
@@ -38,6 +40,7 @@ _cache_total = Counter()
 _last_duration = 0.0
 _last_success = 0.0
 _site_counts = {"systems": 0, "pairs": 0, "poles": 0}
+_disk_loaded = False
 
 
 class SpeedCameraUnavailable(Exception):
@@ -135,11 +138,57 @@ def _usable_cache(now):
     return _cache is not None and now - _fetched_at <= MAX_STALE_SECONDS
 
 
+def _restore_disk_cache(now):
+    global _cache, _fetched_at, _last_success, _site_counts
+    filename = os.environ.get("SPEED_CAMERA_CACHE_FILE")
+    if not filename:
+        return
+    try:
+        with Path(filename).open("rb") as handle:
+            payload = json.loads(handle.read(MAX_RESPONSE_BYTES + 1))
+        cached = payload["payload"]
+        counts = payload["site_counts"]
+        updated_at = float(cached["updated_at"])
+        sites = cached["sites"]
+        location_count = int(cached["location_count"])
+        if not (isinstance(sites, list) and sites and location_count > 0 and
+                math.isfinite(updated_at) and 0 <= now - updated_at <= MAX_STALE_SECONDS and
+                all(isinstance(counts.get(kind), int) and counts[kind] > 0
+                    for kind in ("systems", "pairs", "poles"))):
+            return
+    except (OSError, ValueError, TypeError, KeyError, AttributeError):
+        return
+    with _state_lock:
+        _cache = {"sites": sites, "location_count": location_count, "updated_at": updated_at}
+        _fetched_at = updated_at
+        _last_success = updated_at
+        _site_counts = {kind: counts[kind] for kind in ("systems", "pairs", "poles")}
+        _cache_total["disk_restore"] += 1
+
+
+def _save_disk_cache():
+    filename = os.environ.get("SPEED_CAMERA_CACHE_FILE")
+    if not filename:
+        return
+    path = Path(filename)
+    temporary = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary.write_text(json.dumps({"payload": _cache, "site_counts": _site_counts}))
+        os.replace(temporary, path)
+    except OSError:
+        with _state_lock:
+            _cache_total["disk_write_failure"] += 1
+
+
 def load_speed_cameras():
     """Return a shared snapshot; at most one process-local ArcGIS refresh runs at once."""
-    global _cache, _fetched_at, _retry_after, _last_duration, _last_success, _site_counts
+    global _cache, _fetched_at, _retry_after, _last_duration, _last_success, _site_counts, _disk_loaded
     with _refresh_lock:
         now = time.time()
+        if not _disk_loaded:
+            _disk_loaded = True
+            _restore_disk_cache(now)
         with _state_lock:
             if _cache is not None and now - _fetched_at < CACHE_SECONDS:
                 _cache_total["hit"] += 1
@@ -175,7 +224,9 @@ def load_speed_cameras():
             _last_duration = time.monotonic() - started
             _last_success = now
             _site_counts = parsed["counts"]
-            return {**_cache, "stale": False}
+            result = {**_cache, "stale": False}
+        _save_disk_cache()
+        return result
 
 
 def metrics_snapshot():
@@ -191,7 +242,7 @@ def metrics_snapshot():
 
 
 def reset_for_tests():
-    global _cache, _fetched_at, _retry_after, _last_duration, _last_success, _site_counts
+    global _cache, _fetched_at, _retry_after, _last_duration, _last_success, _site_counts, _disk_loaded
     with _state_lock:
         _cache = None
         _fetched_at = 0.0
@@ -202,3 +253,4 @@ def reset_for_tests():
         _last_duration = 0.0
         _last_success = 0.0
         _site_counts = {"systems": 0, "pairs": 0, "poles": 0}
+        _disk_loaded = False
