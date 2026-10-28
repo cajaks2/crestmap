@@ -24,6 +24,7 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
       ];
       let visible = window.localStorage.getItem("crestmap-speed-camera-layer") !== "hidden";
       let laSites = [];
+      let laLocationCount = 0;
       let laStale = false;
       let fetchedAt = 0;
       let loading = false;
@@ -64,7 +65,7 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
           iconSize: [30, 24], iconAnchor: [15, 12],
         });
         return L.marker(center, { pane: "speedCameraSites", icon,
-          title: `${group.count} LA speed cameras · zoom in for details` })
+          title: `${group.count} LA speed camera ${group.count === 1 ? "location" : "locations"} · zoom in for camera positions` })
           .on("click", () => map.setView(center, Math.max(12, map.getZoom() + 1)))
           .addTo(layer);
       }
@@ -91,33 +92,44 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
               addSite(`PCH at ${name}`, lat, lon, "Testing / planned", malibuSource, true));
           });
         }
-        visibleLaSites.forEach(([site, index]) => {
-          if (clustered) {
-            const point = map.project([site.latitude, site.longitude], map.getZoom());
+        if (clustered) {
+          const locations = new Map();
+          visibleLaSites.forEach(([site, index]) => {
+            const pairId = site.pair_id || `camera-${index}`;
+            if (!locations.has(pairId)) locations.set(pairId,
+              { latitude: 0, longitude: 0, poles: 0, indices: [] });
+            const location = locations.get(pairId);
+            location.latitude += site.latitude;
+            location.longitude += site.longitude;
+            location.poles++;
+            location.indices.push(index);
+          });
+          locations.forEach((location) => {
+            const latitude = location.latitude / location.poles;
+            const longitude = location.longitude / location.poles;
+            const point = map.project([latitude, longitude], map.getZoom());
             const key = `cluster-${map.getZoom()}-${Math.floor(point.x / clusterCell)}-${Math.floor(point.y / clusterCell)}`;
-            if (!groups.has(key)) groups.set(key, { count: 0, latitude: 0,
-              longitude: 0, first: index, indices: [] });
+            if (!groups.has(key)) groups.set(key,
+              { count: 0, latitude: 0, longitude: 0, indices: [] });
             const group = groups.get(key);
             group.count++;
-            group.latitude += site.latitude;
-            group.longitude += site.longitude;
-            group.indices.push(index);
-            return;
-          }
-          const key = `la-${index}`;
-          wanted.add(key);
-          if (!markers.has(key)) markers.set(key,
-            addSite(site.name, site.latitude, site.longitude, site.status, laSource, false,
-              site.direction, site.side));
-        });
+            group.latitude += latitude;
+            group.longitude += longitude;
+            group.indices.push(...location.indices);
+          });
+        } else {
+          visibleLaSites.forEach(([site, index]) => {
+            const key = `la-${index}`;
+            wanted.add(key);
+            if (!markers.has(key)) markers.set(key,
+              addSite(site.name, site.latitude, site.longitude, site.status, laSource, false,
+                site.direction, site.side));
+          });
+        }
         groups.forEach((group, key) => {
           const markerKey = `${key}-${group.indices.join("-")}`;
           wanted.add(markerKey);
-          if (!markers.has(markerKey)) markers.set(markerKey, group.count === 1
-            ? addSite(laSites[group.first].name, laSites[group.first].latitude,
-              laSites[group.first].longitude, laSites[group.first].status, laSource, false,
-              laSites[group.first].direction, laSites[group.first].side)
-            : addCluster(group));
+          if (!markers.has(markerKey)) markers.set(markerKey, addCluster(group));
         });
         markers.forEach((marker, key) => {
           if (wanted.has(key)) return;
@@ -133,8 +145,8 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
         const description = toggle.querySelector(".view-menu-description");
         if (description) description.textContent = !visible ? "Hidden" :
           (currentRegion === "malibu"
-            ? `${malibuSites.length} Malibu sites · ${laSites.length} LA cameras${laStale ? " · stale" : ""}`
-            : `${laSites.length} LA cameras${laStale ? " · stale" : ""}`);
+            ? `${malibuSites.length} Malibu sites · ${laLocationCount} LA locations${laStale ? " · stale" : ""}`
+            : `${laLocationCount} LA locations · ${laSites.length} camera mounts${laStale ? " · stale" : ""}`);
       }
 
       async function refresh() {
@@ -148,6 +160,7 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
             throw new Error("Invalid LADOT data");
           }
           laSites = payload.sites;
+          laLocationCount = Number(payload.location_count) || 0;
           laStale = Boolean(payload.stale);
           fetchedAt = Date.now();
           layer.clearLayers();

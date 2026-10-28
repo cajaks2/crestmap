@@ -311,7 +311,7 @@ The web service also exposes:
 
 - `/status.json?hours=72`: lightweight status/version check used by the browser to decide whether a refresh is useful.
 - `/incidents.json?hours=72`: JSON payload for the selected incident window. This is the current compatibility endpoint and exposes the internal incident row shape.
-- `/api/v1/speed-cameras`: cached LADOT camera sites for both maps. The web process refreshes the two ArcGIS layers at most once every five minutes, retries failures after one minute, and can serve the last successful snapshot for up to 24 hours. `SPEED_CAMERA_POLL_ENABLED=false` disables the background refresh loop.
+- `/api/v1/speed-cameras`: cached LADOT camera sites for both maps. `location_count` counts LADOT locations; `sites` contains individual planned camera mounting points, usually two per location. The web process refreshes the two ArcGIS layers at most once every five minutes, retries failures after one minute, and can serve the last successful snapshot for up to 24 hours. `SPEED_CAMERA_POLL_ENABLED=false` disables the background refresh loop.
 - `?region=malibu`: public Malibu coast/canyon dataset selector supported by the map, summary, history, about, `/status.json`, and `/incidents.json`.
 - Web `/metrics`: Prometheus text-format metrics for web process uptime, incident counts, data freshness, HTTP request counters, and DB-backed latest scrape data.
 - CHP scraper `:8081/metrics`: provider-labeled Prometheus metrics emitted by the long-lived CHP collector, including scrape attempt counters and outbound CHP response-code counters.

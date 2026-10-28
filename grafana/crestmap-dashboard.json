@@ -3308,7 +3308,7 @@
       {
         "id": 91,
         "type": "bargauge",
-        "title": "Published camera features",
+        "title": "LA locations and camera mounts",
         "gridPos": {
           "x": 12,
           "y": 115,
@@ -3363,7 +3363,8 @@
             "mode": "multi",
             "sort": "none"
           }
-        }
+        },
+        "description": "LADOT publishes one system and one pair per location, with one or two planned camera mounting points per location."
       },
       {
         "id": 93,
@@ -3762,7 +3763,7 @@
     "timezone": "browser",
     "title": "Crestmap Operations",
     "uid": "crestmap-chp-live-map",
-    "version": 21,
+    "version": 22,
     "description": "Operational dashboard for crestmap.us: incident collectors, weather and temperature refreshes, site traffic, Postgres health, and Web Push delivery."
   },
   "folderUid": "bfo1wv4abcd1cd",

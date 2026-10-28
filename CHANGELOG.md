@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.330 - 2026-10-27
+
+- Label LADOT's 125 speed camera locations separately from the 246 published camera mounting points. Low-zoom camera groups now count locations; zooming in still shows each published mounting point.
+- No schema migration or reauthentication is required.
+
 ### 0.1.329 - 2026-10-27
 
 - Group nearby Los Angeles speed cameras at wide map zoom levels, showing a camera warning icon with a count. Clicking a group zooms to individual camera sites. Render only markers near the visible map area and reuse existing markers while panning.

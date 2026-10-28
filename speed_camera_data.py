@@ -104,6 +104,7 @@ def _parse_sites(system_features, pole_features):
         if not pair_id:
             continue
         site = {
+            "pair_id": pair_id,
             "name": str(properties.get("Primary_Street") or "LADOT speed camera"),
             "direction": str(properties.get("Traffic_Direction_Enforced") or ""),
             "side": str(properties.get("Side_of_Street_Camera_is_Mounted_on") or ""),
@@ -166,7 +167,8 @@ def load_speed_cameras():
             raise SpeedCameraUnavailable() from None
         now = time.time()
         with _state_lock:
-            _cache = {"sites": parsed["sites"], "updated_at": now}
+            _cache = {"sites": parsed["sites"], "location_count": parsed["counts"]["pairs"],
+                      "updated_at": now}
             _fetched_at = now
             _retry_after = 0.0
             _refresh_total["success"] += 1

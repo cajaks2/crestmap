@@ -53,6 +53,8 @@ def test_server_cache_limits_arcgis_requests_and_preserves_stale_data(monkeypatc
     monkeypatch.setattr(cameras, "urlopen", fake_urlopen)
     first = cameras.load_speed_cameras()
     assert len(first["sites"]) == 2
+    assert first["location_count"] == 1
+    assert first["sites"][0]["pair_id"] == "1"
     assert first["sites"][0]["status"] == "Warning Live"
     assert first["stale"] is False
     assert len(calls) == 2
@@ -80,9 +82,9 @@ def test_server_cache_limits_arcgis_requests_and_preserves_stale_data(monkeypatc
 def test_speed_camera_api_and_metrics(tmp_path, monkeypatch):
     database = tmp_path / "camera.sqlite"
     connect_database(database).close()
-    payload = {"sites": [{"name": "Main St", "latitude": 34.0, "longitude": -118.5,
+    payload = {"sites": [{"pair_id": "1", "name": "Main St", "latitude": 34.0, "longitude": -118.5,
                           "status": "Warning Live", "direction": "", "side": ""}],
-               "updated_at": 1000, "stale": False}
+               "location_count": 1, "updated_at": 1000, "stale": False}
     monkeypatch.setattr(app, "load_speed_cameras", lambda: payload)
     settings = WebSettings(database=database, base_path="/map")
     with TestClient(create_app(settings)) as client:
@@ -125,6 +127,7 @@ let zoom = 10;
 let created = 0;
 let removed = 0;
 let clusterClick;
+let clusterTitle = '';
 const listeners = {{}};
 const layer = {{ addTo() {{ return this; }}, clearLayers() {{}}, removeLayer() {{ removed++; }} }};
 const map = {{
@@ -141,6 +144,7 @@ const toggle = {{ classList: {{ toggle() {{}} }}, setAttribute() {{}},
   querySelector() {{ return {{ textContent: '' }}; }}, addEventListener() {{}} }};
 const sites = Array.from({{ length: 246 }}, (_, index) => ({{
   name: 'Camera ' + index, status: 'Under Construction',
+  pair_id: index < 2 ? 'paired-location' : String(index),
   latitude: index < 2 ? 34.3 : 33.7,
   longitude: index < 2 ? -118.1 : -118.5,
 }}));
@@ -148,9 +152,10 @@ const context = {{ map, currentRegion: 'forest', escapeHtml: (value) => value,
   document: {{ querySelector() {{ return toggle; }}, addEventListener() {{}} }},
   window: {{ localStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
     addEventListener() {{}}, setInterval() {{}} }},
-  fetch: async () => ({{ ok: true, json: async () => ({{ sites, stale: false }}) }}),
+  fetch: async () => ({{ ok: true, json: async () => ({{ sites, location_count: 245, stale: false }}) }}),
   L: {{ layerGroup: () => layer, divIcon: (options) => options,
-    marker: () => {{ created++; return {{ bindPopup() {{ return this; }},
+    marker: (_point, options) => {{ created++; if (options.title.includes('zoom in')) clusterTitle = options.title;
+      return {{ bindPopup() {{ return this; }},
       on(_event, callback) {{ clusterClick = callback; return this; }},
       addTo() {{ return this; }} }}; }},
     DomEvent: {{ disableClickPropagation() {{}} }},
@@ -162,6 +167,7 @@ setImmediate(() => {{
   bounds = [34.2, 34.4, -118.2, -118.0];
   listeners.moveend();
   assert.equal(created, 1);
+  assert.ok(clusterTitle.startsWith('1 LA speed camera location'));
   listeners.moveend();
   assert.equal(created, 1);
   clusterClick();
