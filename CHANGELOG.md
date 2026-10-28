@@ -11,6 +11,13 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.327 - 2026-10-27
+
+- Add a speed camera layer to both map views with LADOT's individual planned camera mounting points; the Malibu view also shows approximate Malibu intersections. Los Angeles popups show the published travel direction, street side, and current system status.
+- Give fire camera markers the same camera pictogram as speed camera markers, using a blue badge without white and a small rotating pointer that shows viewing direction.
+- Show speed cameras as compact yellow warning triangles with a camera symbol inside; live systems use orange.
+- No schema migration or reauthentication is required.
+
 ### 0.1.326 - 2026-10-22
 
 - Replace the thin motorcycle crash glyph with a fuller motorcycle silhouette

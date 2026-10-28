@@ -15,6 +15,7 @@ from temperature_ui import TEMPERATURE_CSS, temperature_script
 from map_workspace_ui import MAP_WORKSPACE_CSS, MAP_WORKSPACE_HTML, MAP_SHEET_HTML, MAP_WORKSPACE_JS
 from road_weather_ui import ROAD_WEATHER_CSS, road_weather_script
 from geo_bounds import REGION_BOUNDS, clear_coordinates_outside_region_bounds
+from speed_camera_ui import speed_camera_script
 from incident_filters import is_nearby_forest_highway_incident
 from incident_marker_icons import INCIDENT_MARKER_SVGS
 from mile_markers import MILE_MARKERS
@@ -1150,6 +1151,17 @@ def map_layer_menu(region="forest", aircraft_tracking_enabled=False):
         'aria-pressed="true"><span class="view-menu-label">Fire cameras</span>'
         '<span class="view-menu-description">ALERTCalifornia cameras</span><span class="map-layer-switch" aria-hidden="true"></span></button>',
     ]
+    speed_camera_description = (
+        "Malibu + Los Angeles sites" if normalize_region(region) == "malibu"
+        else "Los Angeles sites"
+    )
+    rows.append(
+        '<button type="button" class="view-menu-row is-active" data-speed-camera-layer-toggle '
+        'aria-label="Toggle speed camera sites" aria-pressed="true">'
+        '<span class="view-menu-label">Speed cameras</span>'
+        f'<span class="view-menu-description">{speed_camera_description}</span>'
+        '<span class="map-layer-switch" aria-hidden="true"></span></button>'
+    )
     if normalize_region(region) == "forest":
         rows.append(
             '<button type="button" class="view-menu-row is-active" data-mile-markers-toggle aria-label="Toggle mile markers" '
@@ -2502,6 +2514,55 @@ def build_html(
       background: transparent;
       border: 0;
     }}
+    .speed-camera-site {{
+      display: block; width: 20px; height: 20px;
+      filter: drop-shadow(0 1px 3px #17212b88);
+    }}
+    .speed-camera-site svg {{ display: block; width: 20px; height: 20px; }}
+    .speed-camera-warning {{
+      fill: #f7d04b; stroke: #17212b; stroke-width: 1.3;
+      stroke-linejoin: round;
+    }}
+    .speed-camera-site.is-live .speed-camera-warning {{ fill: #e27631; }}
+    .speed-camera-site.is-planned .speed-camera-warning {{ fill: #f7d04b; }}
+    .speed-camera-glyph {{
+      fill: #17212b;
+    }}
+    .speed-camera-lens {{
+      fill: #f7d04b;
+    }}
+    .speed-camera-site.is-live .speed-camera-lens {{ fill: #e27631; }}
+    .speed-camera-site.is-planned .speed-camera-lens {{ fill: #f7d04b; }}
+    .speed-camera-popup {{
+      position: absolute;
+      text-align: left;
+      pointer-events: none;
+    }}
+    .speed-camera-popup .leaflet-popup-content-wrapper {{
+      border: 1px solid rgba(93, 104, 96, 0.28);
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 3px 12px rgba(24, 32, 38, 0.25);
+      pointer-events: auto;
+    }}
+    .speed-camera-popup .leaflet-popup-content {{
+      width: 210px !important;
+      margin: 12px 30px 12px 12px;
+      color: #263238;
+      font-size: 12px;
+      line-height: 1.5;
+    }}
+    .speed-camera-popup .leaflet-popup-close-button {{
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      color: #263238;
+      font-size: 20px;
+      line-height: 24px;
+      text-decoration: none;
+      pointer-events: auto;
+    }}
+    .speed-camera-popup .leaflet-popup-tip-container {{ display: none; }}
     .camera-marker-symbol {{
       position: absolute;
       inset: 0;
@@ -2509,7 +2570,7 @@ def build_html(
       filter: drop-shadow(0 1px 3px rgba(24, 32, 38, 0.42));
       pointer-events: none;
     }}
-    .camera-marker-symbol svg {{
+    .camera-marker-symbol > svg {{
       display: block;
       width: 30px;
       height: 30px;
@@ -2521,20 +2582,31 @@ def build_html(
     }}
     .camera-marker-arrow {{
       fill: #2477a6;
-      stroke: #ffffff;
-      stroke-width: 1.8;
+      stroke: #185678;
+      stroke-width: 1.2;
       stroke-linejoin: round;
     }}
     .camera-marker-center {{
-      fill: #ffffff;
+      fill: #a8d3e6;
       stroke: #185678;
-      stroke-width: 1.4;
+      stroke-width: 1.5;
+    }}
+    .camera-marker-glyph {{
+      fill: none;
+      stroke: #185678;
+      stroke-width: 2.2;
+      stroke-linejoin: round;
+      stroke-linecap: round;
     }}
     .camera-marker.is-offline .camera-marker-arrow {{
       fill: #89928c;
-      stroke: #ffffff;
+      stroke: #5f6862;
     }}
     .camera-marker.is-offline .camera-marker-center {{
+      fill: #c8cfcc;
+      stroke: #5f6862;
+    }}
+    .camera-marker.is-offline .camera-marker-glyph {{
       stroke: #5f6862;
     }}
     .camera-marker.is-selected .camera-marker-symbol::before {{
@@ -2543,7 +2615,7 @@ def build_html(
       inset: -6px;
       border: 3px solid rgba(31, 104, 64, 0.78);
       border-radius: 999px;
-      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.88), 0 2px 12px rgba(24, 32, 38, 0.3);
+      box-shadow: 0 0 0 3px rgba(168, 211, 230, 0.9), 0 2px 12px rgba(24, 32, 38, 0.3);
     }}
     .camera-image-link {{
       display: block;
@@ -4995,8 +5067,11 @@ def build_html(
         iconAnchor: [size / 2 - displayOffsetX, size / 2],
         html: `<span class="camera-marker-symbol" style="--camera-bearing: ${{bearing}}deg" aria-hidden="true">
           <svg viewBox="0 0 30 30" focusable="false">
-            <g class="camera-marker-bearing"><path class="camera-marker-arrow" d="M15 1.5 24.5 25 15 20.7 5.5 25Z"></path></g>
-            <circle class="camera-marker-center" cx="15" cy="15" r="3.1"></circle>
+            <g class="camera-marker-bearing"><path class="camera-marker-arrow" d="M15 1 21.5 13 15 10.5 8.5 13Z"></path></g>
+            <circle class="camera-marker-center" cx="15" cy="15" r="8.2"></circle>
+            <svg class="camera-marker-glyph" x="9.5" y="9.5" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M3 7h4l2-2h6l2 2h4v12H3z"/><circle cx="12" cy="13" r="3"/>
+            </svg>
           </svg>
         </span>`
       }});
@@ -6258,6 +6333,7 @@ def build_html(
     setupUserLocation();
     setupMediaLightbox();
     setupCameraLayer();
+    {speed_camera_script()}
     setupAircraftLayer();
     {temperature_script(app_path(base_path, "/api/v1/temperature"))}
     {road_weather_script(app_path(base_path, "/api/v1/road-weather"))}

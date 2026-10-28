@@ -418,7 +418,9 @@ def test_build_html_adds_directional_alertcalifornia_camera_layer():
     assert "function offsetCollocatedCameras(cameraList)" in html
     assert "camera.display_offset_x = (index - (group.length - 1) / 2) * 28" in html
     assert "function cameraIcon(camera, selected = false)" in html
-    assert '<circle class="camera-marker-center" cx="15" cy="15"' in html
+    assert '<circle class="camera-marker-center" cx="15" cy="15" r="8.2"' in html
+    assert 'd="M15 1 21.5 13 15 10.5 8.5 13Z"' in html
+    assert 'class="camera-marker-glyph"' in html
     assert "transform: rotate(var(--camera-bearing, 0deg))" in html
     assert "function cameraDisplayLatLng(camera)" in html
     assert "const displayPosition = cameraDisplayLatLng(camera)" in html
@@ -455,6 +457,28 @@ def test_build_html_adds_directional_alertcalifornia_camera_layer():
     assert 'url.searchParams.set("camera", camera.id)' in html
     assert 'url.searchParams.delete("camera")' in html
     assert "setupCameraLayer();" in html
+
+
+def test_speed_camera_sites_are_separate_from_fire_cameras():
+    malibu_html = build_html([], "2026-10-27T10:00:00-07:00", 72, region="malibu")
+    forest_html = build_html([], "2026-10-27T10:00:00-07:00", 72, region="forest")
+
+    assert 'data-speed-camera-layer-toggle' in malibu_html
+    assert 'data-speed-camera-layer-toggle' in forest_html
+    assert 'Los Angeles sites' in forest_html
+    assert 'CameraLocations_09302026/FeatureServer/0/query' in forest_html
+    assert 'if (currentRegion === "malibu") {' in forest_html
+    assert 'data-camera-layer-toggle' in malibu_html
+    assert 'class="speed-camera-warning" d="M12 2 22 20H2Z"' in malibu_html
+    assert 'class="speed-camera-glyph"' in malibu_html
+    assert 'class="speed-camera-lens"' in malibu_html
+    assert '.speed-camera-site.is-planned .speed-camera-warning { fill: #f7d04b; }' in malibu_html
+    assert 'Approximate intersection; exact camera position is unpublished.' in malibu_html
+    assert 'LADOT planned mounting point; installed position may differ.' in malibu_html
+    assert 'CameraSystemLabels_view/FeatureServer/0/query' in malibu_html
+    assert 'CameraLocations_09302026/FeatureServer/0/query' in malibu_html
+    assert 'Enforces ${escapeHtml(direction)} traffic' in malibu_html
+    assert '"crestmap-speed-camera-layer"' in malibu_html
 
 
 def test_load_incidents_clears_out_of_bounds_coordinates(tmp_path):
