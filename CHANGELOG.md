@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.332 - 2026-10-28
+
+- Replace Newcomb's Ranch's tree temperature badge with a compact wood-sign badge based on its ranch sign.
+- Group Glendale, Long Beach, and Malibu speed camera locations with the existing Los Angeles camera clusters at wide map zoom levels; zooming in reveals the individual markers.
+- No schema migration or reauthentication is required.
+
 ### 0.1.331 - 2026-10-28
 
 - Show the published speed enforcement programs across Los Angeles County on both map views: add nine Glendale corridors and 18 Long Beach corridors, and make the five Malibu sites visible from either region. Mark the newly mapped corridor points as approximate, link each popup to the issuing city's report, and distinguish published locations from confirmed activation.

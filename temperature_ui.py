@@ -22,6 +22,15 @@ TEMPERATURE_CSS = """
     .temperature-label .temperature-badge::after { content: ""; position: absolute; inset: -9px; }
     .temperature-source-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
     .temperature-landmark-icon { font-size: 9px; line-height: 1; filter: saturate(.78); }
+    .temperature-newcombs-sign {
+      display: inline-flex; align-items: center; justify-content: center;
+      flex: 0 0 19px; width: 19px; height: 11px;
+      clip-path: polygon(4% 6%, 92% 0, 100% 18%, 98% 84%, 91% 100%, 9% 94%, 0 80%, 2% 24%);
+      background: linear-gradient(174deg, #9b5127 0%, #7f381b 48%, #a45628 100%);
+      box-shadow: inset 0 0 0 1px #4d210f;
+      color: #fff0cd; text-shadow: 0 1px #54250f;
+      font: 900 7px/1 Georgia, serif; letter-spacing: -.7px;
+    }
     .temperature-label.is-observation .temperature-badge { opacity: .92; box-shadow: 0 0 0 1px rgba(255,255,255,.65); }
     .temperature-label.is-freezing { --temperature-fill: rgba(219,234,254,.96); --temperature-stroke: #2563a8; --temperature-ink: #173f70; }
     .temperature-label.is-cold { --temperature-fill: rgba(207,250,254,.96); --temperature-stroke: #0e7490; --temperature-ink: #15586b; }
@@ -276,9 +285,11 @@ TEMPERATURE_JS = r"""
           const size = map.getSize();
           const degrees = Math.round(point.temperature_f);
           if (!point.priority && shouldSkipTemperature(pixel, degrees, placedTemperatures, map.getZoom())) continue;
-          const landmarkIcon = point.name === "Newcomb's Ranch" ? "🌲"
-            : point.name === "Rock Store / Old Place area" ? "🪨" : "";
-          const width = landmarkIcon ? (degrees >= 100 ? 39 : 36) : point.terrain_extreme ? 30 : degrees >= 100 ? 28 : 25;
+          const isNewcombs = point.name === "Newcomb's Ranch";
+          const landmarkIcon = isNewcombs ? '<i class="temperature-newcombs-sign" aria-hidden="true">NR</i>'
+            : point.name === "Rock Store / Old Place area" ? '<i class="temperature-landmark-icon" aria-hidden="true">🪨</i>' : "";
+          const width = isNewcombs ? (degrees >= 100 ? 49 : 44)
+            : landmarkIcon ? (degrees >= 100 ? 39 : 36) : point.terrain_extreme ? 30 : degrees >= 100 ? 28 : 25;
           const key = `${point.kind}:${point.latitude}:${point.longitude}:${point.name}`;
           activeKeys.add(key);
           let placement = placeTemperatureLabel(pixel, size, occupied, width, height, previousPlacements.get(key));
@@ -303,7 +314,7 @@ TEMPERATURE_JS = r"""
           const calibration = Array.isArray(point.calibrated_by) && point.calibrated_by.length
             ? `<br>Adjusted using ${escapeHtml(point.calibrated_by.join(", "))}` : "";
           const {dx, dy} = placement;
-          const badgeContent = `${landmarkIcon ? `<i class="temperature-landmark-icon" aria-hidden="true">${landmarkIcon}</i>` : ""}${measured ? '<i class="temperature-source-dot" aria-hidden="true"></i>' : ""}${degrees}°`;
+          const badgeContent = `${landmarkIcon}${measured ? '<i class="temperature-source-dot" aria-hidden="true"></i>' : ""}${degrees}°`;
           const marker = L.marker(latlng, {
             pane: "temperatures", keyboard: true, riseOnHover: false,
             title: `${point.name}: ${degrees}°F, ${measured ? "measured" : "estimated"} air temperature`,
