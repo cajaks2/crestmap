@@ -37,6 +37,11 @@ from generate_live_map import (
     region_label,
 )
 from scrape_chp_traffic import connect_database
+from speed_camera_data import (
+    SpeedCameraUnavailable,
+    load_speed_cameras,
+    metrics_snapshot as speed_camera_metrics_snapshot,
+)
 from weather_metrics import snapshot as weather_metrics_snapshot
 
 
@@ -54,7 +59,7 @@ CONTENT_SECURITY_POLICY = (
     "style-src 'self' 'unsafe-inline' https://unpkg.com; "
     "img-src 'self' data: blob: https://unpkg.com https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://cameras.alertcalifornia.org https://www.google-analytics.com https://*.r2.cloudflarestorage.com; "
     "media-src 'self' blob: https://*.r2.cloudflarestorage.com; "
-    "connect-src 'self' https://unpkg.com https://cameras.alertcalifornia.org https://services.arcgis.com https://www.google-analytics.com https://*.google-analytics.com https://*.r2.cloudflarestorage.com; "
+    "connect-src 'self' https://unpkg.com https://cameras.alertcalifornia.org https://www.google-analytics.com https://*.google-analytics.com https://*.r2.cloudflarestorage.com; "
     "font-src 'self' data:; "
     "frame-ancestors 'none'; "
     "base-uri 'self'; "
@@ -825,6 +830,38 @@ def prometheus_metrics(database, database_url, hours, conn=None, pool_stats=None
             metric_line("crestmap_comments_pending", comments_pending),
         ]
     )
+    camera = speed_camera_metrics_snapshot()
+    lines.extend([
+        "# HELP crestmap_speed_camera_arcgis_refresh_total ArcGIS camera snapshot refreshes by outcome.",
+        "# TYPE crestmap_speed_camera_arcgis_refresh_total counter",
+    ])
+    for outcome in ("success", "failure"):
+        lines.append(metric_line("crestmap_speed_camera_arcgis_refresh_total", camera["refresh_total"].get(outcome, 0), {"outcome": outcome}))
+    lines.extend([
+        "# HELP crestmap_speed_camera_arcgis_requests_total ArcGIS camera layer requests by outcome.",
+        "# TYPE crestmap_speed_camera_arcgis_requests_total counter",
+    ])
+    for layer in ("systems", "poles"):
+        for outcome in ("success", "failure"):
+            lines.append(metric_line("crestmap_speed_camera_arcgis_requests_total", camera["request_total"].get((layer, outcome), 0), {"layer": layer, "outcome": outcome}))
+    lines.extend([
+        "# HELP crestmap_speed_camera_cache_events_total Server camera cache events by type.",
+        "# TYPE crestmap_speed_camera_cache_events_total counter",
+    ])
+    for event in ("hit", "miss", "stale", "retry_suppressed"):
+        lines.append(metric_line("crestmap_speed_camera_cache_events_total", camera["cache_total"].get(event, 0), {"event": event}))
+    lines.extend([
+        "# HELP crestmap_speed_camera_arcgis_last_duration_seconds Duration of the latest ArcGIS snapshot refresh.",
+        "# TYPE crestmap_speed_camera_arcgis_last_duration_seconds gauge",
+        metric_line("crestmap_speed_camera_arcgis_last_duration_seconds", f'{camera["last_duration"]:.3f}'),
+        "# HELP crestmap_speed_camera_arcgis_last_success_timestamp_seconds Last successful ArcGIS snapshot refresh.",
+        "# TYPE crestmap_speed_camera_arcgis_last_success_timestamp_seconds gauge",
+        metric_line("crestmap_speed_camera_arcgis_last_success_timestamp_seconds", f'{camera["last_success"]:.3f}'),
+        "# HELP crestmap_speed_camera_sites Published LADOT camera features in the cached snapshot.",
+        "# TYPE crestmap_speed_camera_sites gauge",
+    ])
+    for kind in ("systems", "pairs", "poles"):
+        lines.append(metric_line("crestmap_speed_camera_sites", camera["site_counts"].get(kind, 0), {"kind": kind}))
     lines.append("")
     return "\n".join(lines).encode("utf-8")
 
@@ -1053,6 +1090,7 @@ class LiveMapHandler(BaseHTTPRequestHandler):
         robots_paths = {"/robots.txt", f"{asset_base}/robots.txt"}
         sitemap_paths = {"/sitemap.xml", f"{asset_base}/sitemap.xml"}
         metrics_paths = {"/metrics", f"{asset_base}/metrics"}
+        speed_camera_paths = {"/api/v1/speed-cameras", f"{asset_base}/api/v1/speed-cameras"}
         favicon_svg_paths = {"/favicon.svg", f"{asset_base}/favicon.svg"}
         favicon_ico_paths = {"/favicon.ico", f"{asset_base}/favicon.ico"}
         apple_touch_icon_paths = {
@@ -1186,6 +1224,25 @@ class LiveMapHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            if send_body:
+                self.wfile.write(body)
+            return
+
+        if path in speed_camera_paths:
+            try:
+                payload = load_speed_cameras()
+                body = json.dumps(payload, sort_keys=True).encode("utf-8")
+                status = 200
+                cache_control = "public, max-age=30" if payload["stale"] else "public, max-age=60"
+            except SpeedCameraUnavailable:
+                body = b'{"error":{"code":"speed_cameras_unavailable","message":"speed cameras are unavailable"}}'
+                status = 503
+                cache_control = "no-store"
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", cache_control)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             if send_body:

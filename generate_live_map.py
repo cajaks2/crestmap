@@ -6333,7 +6333,7 @@ def build_html(
     setupUserLocation();
     setupMediaLightbox();
     setupCameraLayer();
-    {speed_camera_script()}
+    {speed_camera_script(app_path(base_path, "/api/v1/speed-cameras"))}
     setupAircraftLayer();
     {temperature_script(app_path(base_path, "/api/v1/temperature"))}
     {road_weather_script(app_path(base_path, "/api/v1/road-weather"))}

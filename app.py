@@ -1,11 +1,12 @@
 import base64
+import asyncio
 import datetime as dt
 import html
 import json
 import os
 import secrets
 import time
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager, contextmanager, suppress
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlencode, urlsplit
@@ -23,6 +24,7 @@ from admin_sessions import (
     valid_admin_session_token,
 )
 from temperature import TemperatureUnavailable, load_temperatures
+from speed_camera_data import CACHE_SECONDS, SpeedCameraUnavailable, load_speed_cameras
 from road_weather import RoadWeatherUnavailable, load_road_weather
 from aircraft_tracking import load_tracker_status, load_visible_aircraft
 from comments import (
@@ -107,6 +109,7 @@ class WebSettings:
     media_max_video_seconds: int = 60
     vapid_public_key: str | None = None
     aircraft_tracking_enabled: bool = False
+    speed_camera_poll_enabled: bool = False
     aircraft_display_delay_seconds: int = 60
     aircraft_max_age_seconds: int = 900
     aircraft_trail_age_seconds: int = 1800
@@ -140,6 +143,8 @@ class WebSettings:
             media_max_video_seconds=int(os.environ.get("MEDIA_MAX_VIDEO_SECONDS", "60")),
             vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY") or None,
             aircraft_tracking_enabled=os.environ.get("AIRCRAFT_TRACKING_ENABLED", "false").lower()
+            in {"1", "true", "yes", "on"},
+            speed_camera_poll_enabled=os.environ.get("SPEED_CAMERA_POLL_ENABLED", "true").lower()
             in {"1", "true", "yes", "on"},
             aircraft_display_delay_seconds=max(
                 0, int(os.environ.get("AIRCRAFT_DISPLAY_DELAY_SECONDS", "60"))
@@ -256,6 +261,8 @@ def route_label(path, settings):
         return "incidents"
     if path in {"/api/v1/aircraft", f"{asset_base}/api/v1/aircraft"}:
         return "aircraft"
+    if path in {"/api/v1/speed-cameras", f"{asset_base}/api/v1/speed-cameras"}:
+        return "speed_cameras"
     if path in {"/admin/comments", f"{asset_base}/admin/comments"}:
         return "admin_comments"
     if path in {
@@ -1284,6 +1291,14 @@ def dispatch_request(request, send_body=True):
 
     region = requested_region(request)
 
+    if path in {"/api/v1/speed-cameras", f"{asset_base}/api/v1/speed-cameras"}:
+        try:
+            payload = load_speed_cameras()
+        except SpeedCameraUnavailable:
+            return api_error("speed cameras are unavailable", "speed_cameras_unavailable", 503, send_body)
+        cache_control = "public, max-age=60" if not payload["stale"] else "public, max-age=30"
+        return json_response(payload, cache_control=cache_control, send_body=send_body)
+
     if path in {"/api/v1/temperature", f"{asset_base}/api/v1/temperature"}:
         try:
             payload = load_temperatures(region)
@@ -2114,9 +2129,24 @@ def create_app(settings=None):
                 "server.framework": "fastapi",
             },
         )
+        poll_task = None
+        if settings.speed_camera_poll_enabled:
+            async def poll_speed_cameras():
+                while True:
+                    try:
+                        await asyncio.to_thread(load_speed_cameras)
+                    except SpeedCameraUnavailable:
+                        pass
+                    await asyncio.sleep(CACHE_SECONDS)
+
+            poll_task = asyncio.create_task(poll_speed_cameras())
         try:
             yield
         finally:
+            if poll_task is not None:
+                poll_task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await poll_task
             pool = getattr(app.state, "database_pool", None)
             if pool is not None:
                 pool.close()

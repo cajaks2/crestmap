@@ -311,12 +311,13 @@ The web service also exposes:
 
 - `/status.json?hours=72`: lightweight status/version check used by the browser to decide whether a refresh is useful.
 - `/incidents.json?hours=72`: JSON payload for the selected incident window. This is the current compatibility endpoint and exposes the internal incident row shape.
+- `/api/v1/speed-cameras`: cached LADOT camera sites for both maps. The web process refreshes the two ArcGIS layers at most once every five minutes, retries failures after one minute, and can serve the last successful snapshot for up to 24 hours. `SPEED_CAMERA_POLL_ENABLED=false` disables the background refresh loop.
 - `?region=malibu`: public Malibu coast/canyon dataset selector supported by the map, summary, history, about, `/status.json`, and `/incidents.json`.
 - Web `/metrics`: Prometheus text-format metrics for web process uptime, incident counts, data freshness, HTTP request counters, and DB-backed latest scrape data.
 - CHP scraper `:8081/metrics`: provider-labeled Prometheus metrics emitted by the long-lived CHP collector, including scrape attempt counters and outbound CHP response-code counters.
 - WildWeb scraper `:8082/metrics`: the same generic `crestmap_scraper_*` families with `provider="wildweb"` and `source="api"`.
 
-Merge `deploy/digitalocean/prometheus-scrape.yml` into the host Prometheus `scrape_configs` so both collector targets are ingested. The checked-in Grafana dashboard includes a `provider` filter and keeps XML/CAD-only panels scoped to CHP.
+Merge `deploy/digitalocean/prometheus-scrape.yml` into the host Prometheus `scrape_configs` so both collector targets are ingested. The checked-in Grafana dashboard includes a `provider` filter, keeps XML/CAD-only panels scoped to CHP, and charts LADOT ArcGIS refreshes, request outcomes, cache activity, freshness, and camera counts.
 
 Comment API:
 

@@ -3161,6 +3161,486 @@
           },
           "showUnfilled": true
         }
+      },
+      {
+        "id": 1015,
+        "type": "row",
+        "title": "LADOT Speed Cameras",
+        "collapsed": false,
+        "gridPos": {
+          "x": 0,
+          "y": 114,
+          "w": 24,
+          "h": 1
+        },
+        "panels": []
+      },
+      {
+        "id": 87,
+        "type": "stat",
+        "title": "Last successful ArcGIS pull age",
+        "gridPos": {
+          "x": 0,
+          "y": 115,
+          "w": 6,
+          "h": 4
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "mkJbCvK4z"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "mkJbCvK4z"
+            },
+            "editorMode": "code",
+            "expr": "time() - (crestmap_speed_camera_arcgis_last_success_timestamp_seconds{site=~\"$site\",job=\"crestmap\"} > 0)",
+            "legendFormat": "{{site}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "s",
+            "noValue": "No data"
+          },
+          "overrides": []
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "description": "Age of the most recent successful server-side LADOT ArcGIS snapshot."
+      },
+      {
+        "id": 89,
+        "type": "stat",
+        "title": "ArcGIS pull failures (1h)",
+        "gridPos": {
+          "x": 6,
+          "y": 115,
+          "w": 6,
+          "h": 4
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "mkJbCvK4z"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "mkJbCvK4z"
+            },
+            "editorMode": "code",
+            "expr": "sum(increase(crestmap_speed_camera_arcgis_refresh_total{site=~\"$site\",job=\"crestmap\",outcome=\"failure\"}[1h]))",
+            "legendFormat": "failures",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        }
+      },
+      {
+        "id": 91,
+        "type": "bargauge",
+        "title": "Published camera features",
+        "gridPos": {
+          "x": 12,
+          "y": 115,
+          "w": 12,
+          "h": 6
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "mkJbCvK4z"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "mkJbCvK4z"
+            },
+            "editorMode": "code",
+            "expr": "crestmap_speed_camera_sites{site=~\"$site\",job=\"crestmap\"}",
+            "legendFormat": "{{site}} \u00b7 {{kind}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        }
+      },
+      {
+        "id": 93,
+        "type": "bargauge",
+        "title": "Snapshot refresh outcomes",
+        "gridPos": {
+          "x": 0,
+          "y": 121,
+          "w": 12,
+          "h": 7
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "mkJbCvK4z"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "mkJbCvK4z"
+            },
+            "editorMode": "code",
+            "expr": "sum by (site,outcome) (increase(crestmap_speed_camera_arcgis_refresh_total{site=~\"$site\",job=\"crestmap\"}[$__range]))",
+            "legendFormat": "{{site}} \u00b7 {{outcome}}",
+            "range": false,
+            "refId": "A",
+            "instant": true
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "showPoints": "never",
+              "spanNulls": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "displayMode": "gradient",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showUnfilled": true
+        }
+      },
+      {
+        "id": 95,
+        "type": "bargauge",
+        "title": "ArcGIS layer request outcomes",
+        "gridPos": {
+          "x": 12,
+          "y": 121,
+          "w": 12,
+          "h": 7
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "mkJbCvK4z"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "mkJbCvK4z"
+            },
+            "editorMode": "code",
+            "expr": "sum by (site,layer,outcome) (increase(crestmap_speed_camera_arcgis_requests_total{site=~\"$site\",job=\"crestmap\"}[$__range]))",
+            "legendFormat": "{{site}} \u00b7 {{layer}} \u00b7 {{outcome}}",
+            "range": false,
+            "refId": "A",
+            "instant": true
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "showPoints": "never",
+              "spanNulls": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "displayMode": "gradient",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showUnfilled": true
+        }
+      },
+      {
+        "id": 97,
+        "type": "timeseries",
+        "title": "Latest ArcGIS pull duration",
+        "gridPos": {
+          "x": 0,
+          "y": 128,
+          "w": 12,
+          "h": 7
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "mkJbCvK4z"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "mkJbCvK4z"
+            },
+            "editorMode": "code",
+            "expr": "crestmap_speed_camera_arcgis_last_duration_seconds{site=~\"$site\",job=\"crestmap\"}",
+            "legendFormat": "{{site}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "showPoints": "never",
+              "spanNulls": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        }
+      },
+      {
+        "id": 99,
+        "type": "bargauge",
+        "title": "Camera cache activity",
+        "gridPos": {
+          "x": 12,
+          "y": 128,
+          "w": 12,
+          "h": 7
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "mkJbCvK4z"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "mkJbCvK4z"
+            },
+            "editorMode": "code",
+            "expr": "sum by (site,event) (increase(crestmap_speed_camera_cache_events_total{site=~\"$site\",job=\"crestmap\"}[$__range]))",
+            "legendFormat": "{{site}} \u00b7 {{event}}",
+            "range": false,
+            "refId": "A",
+            "instant": true
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "fillOpacity": 8,
+              "gradientMode": "none",
+              "showPoints": "never",
+              "spanNulls": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "displayMode": "gradient",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showUnfilled": true
+        }
       }
     ],
     "refresh": "30s",
@@ -3282,7 +3762,7 @@
     "timezone": "browser",
     "title": "Crestmap Operations",
     "uid": "crestmap-chp-live-map",
-    "version": 15,
+    "version": 16,
     "description": "Operational dashboard for crestmap.us: incident collectors, weather and temperature refreshes, site traffic, Postgres health, and Web Push delivery."
   },
   "folderUid": "bfo1wv4abcd1cd",

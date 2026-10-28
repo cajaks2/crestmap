@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.328 - 2026-10-27
+
+- Serve LADOT speed cameras from a shared web cache, limiting ArcGIS pulls to one refresh per five minutes and preserving recent data during upstream failures. Remove direct browser requests to ArcGIS.
+- Export ArcGIS pull, cache, freshness, duration, and camera count metrics and add panels to the checked-in Grafana dashboard.
+- No schema migration or reauthentication is required.
+
 ### 0.1.327 - 2026-10-27
 
 - Add a speed camera layer to both map views with LADOT's individual planned camera mounting points; the Malibu view also shows approximate Malibu intersections. Los Angeles popups show the published travel direction, street side, and current system status.
