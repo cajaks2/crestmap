@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.333 - 2026-10-28
+
+- Enlarge the Newcomb's Ranch wood-sign tile and its lettering in the temperature badge, with extra room for the temperature reading and map label placement.
+- No schema migration or reauthentication is required.
+
 ### 0.1.332 - 2026-10-28
 
 - Replace Newcomb's Ranch's tree temperature badge with a compact wood-sign badge based on its ranch sign.

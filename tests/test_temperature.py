@@ -298,6 +298,8 @@ def test_endpoint_and_local_render(tmp_path, monkeypatch, region):
     assert "duplicate: 130" in rendered
     assert 'const isNewcombs = point.name === "Newcomb\'s Ranch"' in rendered
     assert 'class="temperature-newcombs-sign" aria-hidden="true">NR</i>' in rendered
+    assert 'flex: 0 0 27px; width: 27px; height: 15px;' in rendered
+    assert 'const labelHeight = isNewcombs ? 19 : height;' in rendered
     assert 'point.name === "Rock Store / Old Place area"' in rendered
     assert "if (!point.priority && shouldSkipTemperature" in rendered
     assert "if (!placement && point.priority)" in rendered

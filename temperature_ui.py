@@ -24,12 +24,12 @@ TEMPERATURE_CSS = """
     .temperature-landmark-icon { font-size: 9px; line-height: 1; filter: saturate(.78); }
     .temperature-newcombs-sign {
       display: inline-flex; align-items: center; justify-content: center;
-      flex: 0 0 19px; width: 19px; height: 11px;
+      flex: 0 0 27px; width: 27px; height: 15px;
       clip-path: polygon(4% 6%, 92% 0, 100% 18%, 98% 84%, 91% 100%, 9% 94%, 0 80%, 2% 24%);
       background: linear-gradient(174deg, #9b5127 0%, #7f381b 48%, #a45628 100%);
       box-shadow: inset 0 0 0 1px #4d210f;
       color: #fff0cd; text-shadow: 0 1px #54250f;
-      font: 900 7px/1 Georgia, serif; letter-spacing: -.7px;
+      font: 900 9px/1 Georgia, serif; letter-spacing: -.7px;
     }
     .temperature-label.is-observation .temperature-badge { opacity: .92; box-shadow: 0 0 0 1px rgba(255,255,255,.65); }
     .temperature-label.is-freezing { --temperature-fill: rgba(219,234,254,.96); --temperature-stroke: #2563a8; --temperature-ink: #173f70; }
@@ -288,12 +288,13 @@ TEMPERATURE_JS = r"""
           const isNewcombs = point.name === "Newcomb's Ranch";
           const landmarkIcon = isNewcombs ? '<i class="temperature-newcombs-sign" aria-hidden="true">NR</i>'
             : point.name === "Rock Store / Old Place area" ? '<i class="temperature-landmark-icon" aria-hidden="true">🪨</i>' : "";
-          const width = isNewcombs ? (degrees >= 100 ? 49 : 44)
+          const width = isNewcombs ? (degrees >= 100 ? 59 : 53)
             : landmarkIcon ? (degrees >= 100 ? 39 : 36) : point.terrain_extreme ? 30 : degrees >= 100 ? 28 : 25;
+          const labelHeight = isNewcombs ? 19 : height;
           const key = `${point.kind}:${point.latitude}:${point.longitude}:${point.name}`;
           activeKeys.add(key);
-          let placement = placeTemperatureLabel(pixel, size, occupied, width, height, previousPlacements.get(key));
-          if (!placement && point.priority) placement = placeTemperatureLabel(pixel, size, [], width, height, previousPlacements.get(key));
+          let placement = placeTemperatureLabel(pixel, size, occupied, width, labelHeight, previousPlacements.get(key));
+          if (!placement && point.priority) placement = placeTemperatureLabel(pixel, size, [], width, labelHeight, previousPlacements.get(key));
           if (!placement) continue; // All nearby positions are occupied; never cover an incident.
           previousPlacements.set(key, placement.index);
           occupied.push(placement.box);
@@ -318,7 +319,7 @@ TEMPERATURE_JS = r"""
           const marker = L.marker(latlng, {
             pane: "temperatures", keyboard: true, riseOnHover: false,
             title: `${point.name}: ${degrees}°F, ${measured ? "measured" : "estimated"} air temperature`,
-            icon: L.divIcon({className: `temperature-label is-${temperatureBand(degrees)}${measured ? " is-observation" : ""}`, html: `<span class="temperature-badge" style="--temperature-x:${dx}px;--temperature-y:${dy}px;--temperature-width:${width}px;--temperature-height:${height}px">${badgeContent}</span>`, iconSize: [0, 0], iconAnchor: [0, 0]})
+            icon: L.divIcon({className: `temperature-label is-${temperatureBand(degrees)}${measured ? " is-observation" : ""}`, html: `<span class="temperature-badge" style="--temperature-x:${dx}px;--temperature-y:${dy}px;--temperature-width:${width}px;--temperature-height:${labelHeight}px">${badgeContent}</span>`, iconSize: [0, 0], iconAnchor: [0, 0]})
           });
           const detail = measured
             ? `<div class="temperature-popup__heading"><div class="temperature-popup__reading">${degrees}°F</div><div class="temperature-popup__kind">Measured air temperature</div></div><div class="temperature-popup__location">${escapeHtml(point.name)}</div><div class="temperature-popup__meta">Station elevation ${elevation} ft${humidity}<br>Observed ${escapeHtml(valid)}</div>${forecastCopy}<div class="temperature-popup__source-note"><a class="temperature-popup__source" href="https://api.weather.gov/stations/${encodeURIComponent(point.station_id)}/observations/latest" target="_blank" rel="noopener">National Weather Service station</a><span class="temperature-popup__note"> · Forecast by Open-Meteo · Local conditions may differ.</span></div>`
