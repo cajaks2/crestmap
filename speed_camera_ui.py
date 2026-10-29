@@ -103,7 +103,7 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
           iconSize: [30, 24], iconAnchor: [15, 12],
         });
         return L.marker(center, { pane: "speedCameraSites", icon,
-          title: `${group.count} ${group.program} speed camera ${group.count === 1 ? "location" : "locations"} · zoom in for camera positions` })
+          title: `${group.count} ${group.program} speed camera locations · zoom in for camera positions` })
           .on("click", () => map.setView(center, Math.max(12, map.getZoom() + 1)))
           .addTo(layer);
       }
@@ -121,21 +121,26 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
         const clustered = map.getZoom() < 12 || (map.getZoom() < 14 && visibleLaSites.length > 80);
         const clusterCell = 72;
         const groups = new Map();
-        function queueLocation(id, latitude, longitude, program) {
+        function queueLocation(id, latitude, longitude, program, addSingle) {
           const point = map.project([latitude, longitude], map.getZoom());
           const key = `cluster-${map.getZoom()}-${program}-${Math.floor(point.x / clusterCell)}-${Math.floor(point.y / clusterCell)}`;
           if (!groups.has(key)) groups.set(key,
-            { count: 0, latitude: 0, longitude: 0, ids: [], program });
+            { count: 0, latitude: 0, longitude: 0, ids: [], program, single: null });
           const group = groups.get(key);
           group.count++;
           group.latitude += latitude;
           group.longitude += longitude;
           group.ids.push(id);
+          group.single = group.count === 1 ? { id, add: addSingle } : null;
         }
         malibuSites.forEach(([name, lat, lon], index) => {
           if (!nearby.contains([lat, lon])) return;
           const key = `malibu-${index}`;
-          if (clustered) { queueLocation(key, lat, lon, "Malibu"); return; }
+          if (clustered) {
+            queueLocation(key, lat, lon, "Malibu", () =>
+              addSite(`Malibu: PCH at ${name}`, lat, lon, "Testing / planned", malibuSource, true));
+            return;
+          }
           wanted.add(key);
           if (!markers.has(key)) markers.set(key,
             addSite(`Malibu: PCH at ${name}`, lat, lon, "Testing / planned", malibuSource, true));
@@ -143,7 +148,13 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
         glendaleSites.forEach(([name, lat, lon], index) => {
           if (!nearby.contains([lat, lon])) return;
           const key = `glendale-${index}`;
-          if (clustered) { queueLocation(key, lat, lon, "Glendale"); return; }
+          if (clustered) {
+            queueLocation(key, lat, lon, "Glendale", () =>
+              addSite(`Glendale: ${name}`, lat, lon, "Proposed; activation unconfirmed",
+                glendaleSource, true, "", "",
+                "Approximate block from Glendale's impact report; exact camera position is unpublished."));
+            return;
+          }
           wanted.add(key);
           if (!markers.has(key)) markers.set(key,
             addSite(`Glendale: ${name}`, lat, lon, "Proposed; activation unconfirmed",
@@ -153,7 +164,13 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
         longBeachSites.forEach(([name, lat, lon], index) => {
           if (!nearby.contains([lat, lon])) return;
           const key = `long-beach-${index}`;
-          if (clustered) { queueLocation(key, lat, lon, "Long Beach"); return; }
+          if (clustered) {
+            queueLocation(key, lat, lon, "Long Beach", () =>
+              addSite(`Long Beach: ${name}`, lat, lon, "Published corridor; activation varies",
+                longBeachSource, true, "", "",
+                "Approximate corridor midpoint; exact camera position and site status are not published."));
+            return;
+          }
           wanted.add(key);
           if (!markers.has(key)) markers.set(key,
             addSite(`Long Beach: ${name}`, lat, lon, "Published corridor; activation varies",
@@ -162,19 +179,19 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
         });
         if (clustered) {
           const locations = new Map();
-          visibleLaSites.forEach(([site, index]) => {
+          laSites.forEach((site, index) => {
             const pairId = site.pair_id || `camera-${index}`;
             if (!locations.has(pairId)) locations.set(pairId,
-              { latitude: 0, longitude: 0, poles: 0 });
+              { site, index, visible: false });
             const location = locations.get(pairId);
-            location.latitude += site.latitude;
-            location.longitude += site.longitude;
-            location.poles++;
+            if (nearby.contains([site.latitude, site.longitude])) location.visible = true;
           });
           locations.forEach((location, pairId) => {
-            const latitude = location.latitude / location.poles;
-            const longitude = location.longitude / location.poles;
-            queueLocation(`la-${pairId}`, latitude, longitude, "Los Angeles");
+            if (!location.visible) return;
+            const { site, index } = location;
+            queueLocation(`la-${index}`, site.latitude, site.longitude, "Los Angeles", () =>
+              addSite(`Los Angeles: ${site.name}`, site.latitude, site.longitude, site.status, laSource, false,
+                site.direction, site.side));
           });
         } else {
           visibleLaSites.forEach(([site, index]) => {
@@ -186,6 +203,11 @@ def speed_camera_script(api_path="/api/v1/speed-cameras"):
           });
         }
         groups.forEach((group, key) => {
+          if (group.single) {
+            wanted.add(group.single.id);
+            if (!markers.has(group.single.id)) markers.set(group.single.id, group.single.add());
+            return;
+          }
           const markerKey = `${key}-${group.ids.join("-")}`;
           wanted.add(markerKey);
           if (!markers.has(markerKey)) markers.set(markerKey, addCluster(group));

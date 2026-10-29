@@ -165,8 +165,8 @@ let zoom = 10;
 let created = 0;
 let removed = 0;
 const markerTitles = [];
+const markerPositions = [];
 let clusterClick;
-let clusterTitle = '';
 const listeners = {{}};
 const layer = {{ addTo() {{ return this; }}, clearLayers() {{}}, removeLayer() {{ removed++; }} }};
 const map = {{
@@ -193,8 +193,8 @@ const context = {{ map, currentRegion: 'forest', escapeHtml: (value) => value,
     addEventListener() {{}}, setInterval() {{}} }},
   fetch: async () => ({{ ok: true, json: async () => ({{ sites, location_count: 245, stale: false }}) }}),
   L: {{ layerGroup: () => layer, divIcon: (options) => options,
-    marker: (_point, options) => {{ created++; markerTitles.push(options.title);
-      if (options.title.includes('zoom in')) clusterTitle = options.title;
+    marker: (point, options) => {{ created++; markerTitles.push(options.title);
+      markerPositions.push(point);
       return {{ bindPopup() {{ return this; }},
       on(_event, callback) {{ clusterClick = callback; return this; }},
       addTo() {{ return this; }} }}; }},
@@ -207,27 +207,33 @@ setImmediate(() => {{
   bounds = [34.2, 34.4, -118.2, -118.0];
   listeners.moveend();
   assert.equal(created, 1);
-  assert.ok(clusterTitle.startsWith('1 Los Angeles speed camera location'));
+  assert.equal(markerTitles[0], 'Los Angeles: Camera 0 · Under Construction');
+  assert.deepEqual(Array.from(markerPositions[0]), [34.3, -118.1]);
   listeners.moveend();
   assert.equal(created, 1);
-  clusterClick();
+  zoom = 11;
+  listeners.moveend();
+  assert.equal(created, 1, 'a lone camera marker stays in place across clustered zoom levels');
+  zoom = 12;
+  listeners.moveend();
   assert.equal(zoom, 12);
-  assert.equal(created, 3);
-  assert.equal(removed, 1);
+  assert.equal(created, 2, 'close zoom adds the second mounting point');
+  assert.equal(removed, 0);
+  zoom = 10;
   bounds = [33.5, 34.4, -118.7, -118.0];
   listeners.moveend();
-  assert.equal(markerTitles.filter((title) => title.startsWith('Glendale:')).length, 0);
-  assert.equal(markerTitles.filter((title) => title.startsWith('Long Beach:')).length, 0);
   assert.ok(markerTitles.some((title) => title.includes('Los Angeles speed camera locations · zoom in')));
   assert.ok(markerTitles.some((title) => title.includes('Glendale speed camera locations · zoom in')));
   assert.ok(markerTitles.some((title) => title.includes('Long Beach speed camera locations · zoom in')));
   assert.ok(created < 12, 'wide views group each city separately');
+  clusterClick();
+  assert.equal(zoom, 12, 'groups with multiple locations still zoom in');
   const laMountsBeforeCloseZoom = markerTitles.filter((title) => title.startsWith('Los Angeles:')).length;
   zoom = 14;
   bounds = [34.2, 34.4, -118.2, -118.0];
   listeners.moveend();
   assert.equal(markerTitles.filter((title) => title.startsWith('Los Angeles:')).length,
-    laMountsBeforeCloseZoom + 2);
+    laMountsBeforeCloseZoom + 1, 'the single location marker is reused at close zoom');
   bounds = [34.13, 34.18, -118.31, -118.22];
   listeners.moveend();
   assert.equal(markerTitles.filter((title) => title.startsWith('Glendale:')).length, 9);
@@ -242,7 +248,8 @@ setImmediate(() => {{
   assert.ok(removed >= 3);
 }});
 """
-    subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
 
 
 def test_camera_layer_recovers_after_initial_api_failure():

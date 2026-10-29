@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.336 - 2026-10-29
+
+- Show a single speed camera location with its normal camera icon at its site coordinate across wide map zoom levels, instead of a moving count-of-one badge. Keep clusters for cells with multiple locations.
+- No schema migration or reauthentication is required.
+
 ### 0.1.335 - 2026-10-28
 
 - Load ALERTCalifornia camera frames fully before showing them, prevent overlapping 10-second refreshes, and retry failed or stalled first loads without closing the pane. Preserve the previous frame during a refresh.
