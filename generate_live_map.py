@@ -2825,6 +2825,25 @@ def build_html(
     .incident-marker.is-selected .incident-marker-core {{
       box-shadow: 0 0 0 3px #fff, 0 0 0 6px #295b3c, 0 2px 8px rgba(20, 37, 28, 0.54);
     }}
+    .incident-marker[data-overlap-count]::before {{
+      content: attr(data-overlap-count);
+      position: absolute;
+      top: -7px;
+      right: -7px;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      min-width: 20px;
+      height: 20px;
+      box-sizing: border-box;
+      padding: 0 4px;
+      border: 2px solid #fff;
+      border-radius: 999px;
+      color: #fff;
+      background: #18392b;
+      font: 800 11px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+      pointer-events: none;
+    }}
     .incident-marker.is-pulsing .incident-marker-dot::after {{
       content: "";
       position: absolute;
@@ -3596,6 +3615,7 @@ def build_html(
       : offlineRoadData;
     const offlineRegionOutline = {json.dumps(offline_region_outline, separators=(",", ":"))};
     let incidents = [];
+    let incidentStackRanks = new Map();
     let currentDataStatus = initialDataStatus;
     let selectedIncidentKey = new URLSearchParams(window.location.search).get("incident");
 
@@ -5048,12 +5068,70 @@ def build_html(
       }});
     }}
 
+    function incidentReportedAt(incident) {{
+      const value = incident.source_reported_at || incident.first_seen || incident.latest_observed_at;
+      const timestamp = Date.parse(value || "");
+      return Number.isFinite(timestamp) ? timestamp : 0;
+    }}
+
+    function rebuildIncidentStackRanks() {{
+      const statusRank = {{active: 3, reported: 2, cleared: 1, archived: 0}};
+      incidentStackRanks = new Map();
+      [...incidents].sort((a, b) =>
+        incidentReportedAt(a) - incidentReportedAt(b)
+        || (statusRank[a.status] ?? 0) - (statusRank[b.status] ?? 0)
+        || String(a.event_key).localeCompare(String(b.event_key))
+      ).forEach((incident, index) => incidentStackRanks.set(incident.event_key, index));
+    }}
+
     function incidentMarkerZIndexOffset(incident, selected = false) {{
-      if (selected) return 4000;
-      if (incident.status === "active") return 3000;
-      if (incident.status === "reported") return 2000;
-      if (incident.status === "cleared") return 1000;
-      return 0;
+      // Leaflet adds the marker's screen Y to this offset. Leave more than a
+      // viewport between ranks so a lower, older pin cannot cover a newer one.
+      const rank = selected ? incidents.length + 1 : (incidentStackRanks.get(incident.event_key) ?? 0);
+      return (rank + 1) * 4096;
+    }}
+
+    function overlappingVisibleIncidents(incident) {{
+      const visible = incidents.filter(item => {{
+        const marker = markers.get(item.event_key);
+        return marker && map.hasLayer(marker);
+      }});
+      const points = new Map(visible.map(item => [
+        item.event_key, map.latLngToContainerPoint(markers.get(item.event_key).getLatLng())
+      ]));
+      if (!points.has(incident.event_key)) return [];
+      const group = new Set([incident.event_key]);
+      for (let changed = true; changed;) {{
+        changed = false;
+        for (const item of visible) {{
+          if (group.has(item.event_key)) continue;
+          const point = points.get(item.event_key);
+          if ([...group].some(key => {{
+            const other = points.get(key);
+            return Math.hypot(point.x - other.x, point.y - other.y) < 36;
+          }})) {{
+            group.add(item.event_key);
+            changed = true;
+          }}
+        }}
+      }}
+      return visible.filter(item => group.has(item.event_key)).sort((a, b) =>
+        (incidentStackRanks.get(b.event_key) ?? 0) - (incidentStackRanks.get(a.event_key) ?? 0)
+      );
+    }}
+
+    function updateIncidentOverlapBadges() {{
+      const marked = new Set();
+      markers.forEach(marker => marker.getElement()?.removeAttribute("data-overlap-count"));
+      incidents.forEach(incident => {{
+        if (marked.has(incident.event_key) || !markers.has(incident.event_key)) return;
+        const nearby = overlappingVisibleIncidents(incident);
+        if (nearby.length < 2) return;
+        nearby.forEach(item => marked.add(item.event_key));
+        const top = nearby.find(item => item.event_key === selectedIncidentKey) || nearby[0];
+        const element = markers.get(top.event_key)?.getElement();
+        if (element) element.dataset.overlapCount = nearby.length > 99 ? "99+" : String(nearby.length);
+      }});
     }}
 
     function normalizedBearing(value) {{
@@ -5377,6 +5455,7 @@ def build_html(
           marker.setZIndexOffset(incidentMarkerZIndexOffset(incident));
         }}
       }});
+      updateIncidentOverlapBadges();
       cameraMarkers.forEach((marker, cameraId) => {{
         const markerCamera = cameras.find((item) => item.id === cameraId);
         if (markerCamera) marker.setIcon(cameraIcon(markerCamera, cameraId === camera.id));
@@ -5967,6 +6046,7 @@ def build_html(
           marker.bringToFront();
         }}
       }});
+      updateIncidentOverlapBadges();
       const marker = markers.get(incident.event_key);
       if (marker && options.pan !== false && !mobileViewport.matches) {{
         map.setView([incident.latitude, incident.longitude], Math.max(map.getZoom(), 13));
@@ -5992,6 +6072,7 @@ def build_html(
           marker.setZIndexOffset(incidentMarkerZIndexOffset(incident));
           if (!incidentLayerVisible) marker.remove();
         }});
+        updateIncidentOverlapBadges();
       }}
       if (!hadSelection) return;
       if (window.history?.replaceState) {{
@@ -6168,6 +6249,7 @@ def build_html(
         if (matchesSearch && layerAllowsMarker) marker.addTo(map);
         else marker.remove();
       }});
+      updateIncidentOverlapBadges();
     }}
 
     function applyIncidentSearch() {{
@@ -6203,6 +6285,7 @@ def build_html(
 
     function render(options = {{}}) {{
       clearRenderedIncidents();
+      rebuildIncidentStackRanks();
       window.chpLiveMap.incidents = incidents;
       window.chpLiveMap?.workspace?.updateCount();
       if (!incidents.length) {{
@@ -6374,6 +6457,7 @@ def build_html(
     }}
 
     {MAP_WORKSPACE_JS}
+    map.on("zoomend resize", updateIncidentOverlapBadges);
     setupMapLayerMenu();
     setupAutomaticRegionHandoff();
     setupIncidentLayer();

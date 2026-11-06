@@ -11,6 +11,13 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.337 - 2026-11-05
+
+- Keep newer incident markers above older ones even when their statuses differ.
+  Mark overlapping map pins with a count and let users choose among the reports
+  in newest-first order on phones and desktop.
+- No schema migration or reauthentication is required.
+
 ### 0.1.336 - 2026-10-29
 
 - Show a single speed camera location with its normal camera icon at its site coordinate across wide map zoom levels, instead of a moving count-of-one badge. Keep clusters for cells with multiple locations.

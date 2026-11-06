@@ -322,21 +322,17 @@ MAP_WORKSPACE_JS = r"""
         }, 220);
       }
       function showNearby(incident) {
-        const anchor = map.latLngToContainerPoint([incident.latitude, incident.longitude]);
-        const nearby = incidents.filter(item => {
-          const marker = markers.get(item.event_key);
-          if (!marker || !map.hasLayer(marker)) return false;
-          const point = map.latLngToContainerPoint(marker.getLatLng());
-          return Math.hypot(point.x - anchor.x, point.y - anchor.y) < 22;
-        });
+        const nearby = overlappingVisibleIncidents(incident);
         if (nearby.length < 2) return false;
         clearCameraSelection();
         returnFocus = document.activeElement;
         selectionKey = null;
         selection = [incident.latitude, incident.longitude];
-        setList(false);
-        preview.innerHTML = '<strong>Several reports at this location</strong><span class="sheet-location">Open full details to choose an incident.</span>';
-        detailsPanel.innerHTML = '<div class="detail-panel"><h2>Choose an incident</h2><p class="meta">Individual reports at this location</p><div data-overlap-choices></div></div>';
+        if (mobileViewport.matches) {
+          setList(false);
+          preview.innerHTML = '<strong>Overlapping reports</strong><span class="sheet-location">Choose an incident below.</span>';
+        }
+        detailsPanel.innerHTML = `<div class="detail-panel"><h2>Choose an incident</h2><p class="meta">${nearby.length} overlapping reports · newest first</p><div data-overlap-choices></div></div>`;
         const choices = detailsPanel.querySelector('[data-overlap-choices]');
         nearby.forEach(item => {
           const button = document.createElement('button');
@@ -369,7 +365,7 @@ MAP_WORKSPACE_JS = r"""
           });
           choices.append(button);
         });
-        setSheet('expanded');
+        if (mobileViewport.matches) setSheet('expanded');
         return true;
       }
       close.addEventListener("click", closeSheet);

@@ -161,6 +161,7 @@ const detailsPanel = {dataset: {}};
 const detailsCue = null, adminMode = false;
 const markers = new Map(), cameraMarkers = new Map();
 const clearCameraSelection = () => {};
+const updateIncidentOverlapBadges = () => {};
 const pauseUserLocationFollowing = () => pauses++;
 const detailHtml = () => "";
 const loadComments = () => {};
