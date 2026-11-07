@@ -67,6 +67,7 @@ CONTENT_SECURITY_POLICY = (
 )
 MIN_HISTORY_HOURS = 1.0
 MAX_HISTORY_HOURS = 720.0
+MAX_SUMMARY_HISTORY_HOURS = 8760.0
 START_TIME = time.time()
 HTTP_REQUESTS_TOTAL = defaultdict(int)
 ACTIVE_MARKER_COLOR = "#d83b3b"
@@ -898,7 +899,7 @@ class LiveMapHandler(BaseHTTPRequestHandler):
         self.send_header("Permissions-Policy", "camera=(), geolocation=(), microphone=(), payment=(), usb=()")
         super().end_headers()
 
-    def requested_hours(self):
+    def requested_hours(self, max_hours=MAX_HISTORY_HOURS):
         params = parse_qs(urlsplit(self.path).query)
         raw_hours = (params.get("hours") or [None])[0]
         if raw_hours is None:
@@ -907,7 +908,7 @@ class LiveMapHandler(BaseHTTPRequestHandler):
             hours = float(raw_hours)
         except (TypeError, ValueError):
             return self.hours
-        return min(max(hours, MIN_HISTORY_HOURS), MAX_HISTORY_HOURS)
+        return min(max(hours, MIN_HISTORY_HOURS), max_hours)
 
     def requested_region(self):
         parsed = urlsplit(self.path)
@@ -1374,7 +1375,8 @@ class LiveMapHandler(BaseHTTPRequestHandler):
 
         try:
             generated_at = dt.datetime.now().astimezone().isoformat(timespec="seconds")
-            hours = self.requested_hours()
+            max_hours = MAX_SUMMARY_HISTORY_HOURS if path in summary_paths else MAX_HISTORY_HOURS
+            hours = self.requested_hours(max_hours=max_hours)
             with self.database_connection() as conn:
                 region_statuses = self.region_statuses(hours, conn=conn)
                 incidents = load_incidents(self.database, hours, self.database_url, region=region, conn=conn)

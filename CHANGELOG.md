@@ -11,6 +11,13 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.338 - 2026-11-07
+
+- Replace the Summary page's long daily bar list with a responsive time trend
+  and an expandable table of exact period counts. Add 90-day and 1-year
+  windows to Summary while keeping the map and History limits at 30 days.
+- No schema migration or reauthentication is required.
+
 ### 0.1.337 - 2026-11-05
 
 - Keep newer incident markers above older ones even when their statuses differ.

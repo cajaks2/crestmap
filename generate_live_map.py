@@ -28,6 +28,7 @@ REGION_VIEWPORTS = {
     "malibu": {"center": [34.09, -118.78], "zoom": 10},
 }
 HISTORY_PRESETS = [(24, "24h"), (72, "72h"), (168, "7d"), (720, "30d")]
+SUMMARY_HISTORY_PRESETS = [*HISTORY_PRESETS, (2160, "90d"), (8760, "1y")]
 REGION_LABELS = {
     "forest": "Forest",
     "malibu": "Malibu",
@@ -468,11 +469,11 @@ def metadata_urls(base_path, public_url, favicon_params=None):
     }
 
 
-def history_controls(hours, region="forest", extra_params=None):
+def history_controls(hours, region="forest", extra_params=None, presets=None):
     current = int(hours)
     extra_params = extra_params or {}
     links = []
-    for preset_hours, label in HISTORY_PRESETS:
+    for preset_hours, label in presets or HISTORY_PRESETS:
         selected = preset_hours == current
         links.append(
             '<a class="range-tab{}" href="{}"{}>{}</a>'.format(
@@ -490,6 +491,12 @@ def history_controls(hours, region="forest", extra_params=None):
             )
         )
     return "".join(links)
+
+
+def history_window_label(hours):
+    labels = {24: "24 hours", 72: "72 hours", 168: "7 days", 720: "30 days",
+              2160: "90 days", 8760: "1 year"}
+    return labels.get(int(hours), f"{hours:g} hours")
 
 
 def app_path(base_path, suffix="/"):
@@ -1024,11 +1031,11 @@ def view_menu(base_path, current, hours, region="forest", admin_mode=False, airc
         next=current_href,
     )
     items = [
-        ("map", "Map", "Current incidents", view_href(base_path, "/", hours, region)),
+        ("map", "Map", "Current incidents", view_href(base_path, "/", min(hours, 720), region)),
         ("archive", "Archive", "Historical CCRS crashes", "https://crestmap.us/archive/"),
         ("summary", "Summary", "Counts + trends", view_href(base_path, "/summary", hours, region)),
-        ("history", "History", "Search incidents", view_href(base_path, "/history", hours, region)),
-        ("about", "About", "Source + cadence", view_href(base_path, "/about", hours, region)),
+        ("history", "History", "Search incidents", view_href(base_path, "/history", min(hours, 720), region)),
+        ("about", "About", "Source + cadence", view_href(base_path, "/about", min(hours, 720), region)),
         ("corners", "Corners", "Crash counts by corner", "https://crestmap.us/corners/"),
         ("alerts", "Alerts", "Push notification choices", None),
         (
@@ -6801,6 +6808,141 @@ def daily_incident_counts(incidents, generated_at=None, hours=None):
     return [(labels[key], counts[key]) for key in sorted(counts)]
 
 
+def summary_trend_bins(filtered_incidents, all_incidents, generated_at, hours):
+    """Return chronological bins with readable density for each report range."""
+    try:
+        end = dt.datetime.fromisoformat(generated_at)
+    except (TypeError, ValueError):
+        end = dt.datetime.now().astimezone()
+    start = end - dt.timedelta(hours=hours)
+    start_date = start.date()
+    requested_start_date = start_date
+    end_date = end.date()
+    if hours > 2160:
+        available_dates = []
+        for incident in all_incidents:
+            try:
+                available_dates.append(dt.date.fromisoformat(incident_day_key(incident)[0][:10]))
+            except ValueError:
+                continue
+        if available_dates:
+            start_date = max(start_date, min(available_dates))
+            start = max(start, dt.datetime.combine(start_date, dt.time.min, tzinfo=end.tzinfo))
+    mode = "day" if hours <= 720 else "week" if hours <= 2160 else "month"
+    counts = {}
+    for incident in filtered_incidents:
+        try:
+            date_value = dt.date.fromisoformat(incident_day_key(incident)[0][:10])
+        except ValueError:
+            continue
+        if start_date <= date_value <= end_date:
+            counts[date_value] = counts.get(date_value, 0) + 1
+
+    grouped = {}
+    date_value = start_date
+    while date_value <= end_date:
+        if mode == "day":
+            key = date_value
+        elif mode == "week":
+            key = date_value - dt.timedelta(days=date_value.weekday())
+        else:
+            key = date_value.replace(day=1)
+        day_start = dt.datetime.combine(date_value, dt.time.min, tzinfo=end.tzinfo)
+        day_end = day_start + dt.timedelta(days=1)
+        covered_days = max(0.0, (min(day_end, end) - max(day_start, start)).total_seconds() / 86400)
+        bucket = grouped.setdefault(key, {"count": 0, "days": 0.0, "first": date_value, "last": date_value})
+        bucket["count"] += counts.get(date_value, 0)
+        bucket["days"] += covered_days
+        bucket["last"] = date_value
+        date_value += dt.timedelta(days=1)
+
+    bins = []
+    for key, bucket in sorted(grouped.items()):
+        if mode == "day":
+            label = daily_label_for_date(key)
+            short_label = f"{key.strftime('%b')} {key.day}"
+            value = float(bucket["count"])
+        elif mode == "week":
+            first, last = bucket["first"], bucket["last"]
+            label = f"{first.strftime('%b')} {first.day}–{last.strftime('%b')} {last.day}"
+            short_label = f"{first.strftime('%b')} {first.day}"
+            value = bucket["count"] / bucket["days"] if bucket["days"] else 0.0
+        else:
+            label = key.strftime("%B %Y")
+            short_label = key.strftime("%b '%y")
+            value = bucket["count"] / bucket["days"] if bucket["days"] else 0.0
+        bins.append({"label": label, "short_label": short_label, "count": bucket["count"],
+                     "days": bucket["days"], "value": value})
+    return mode, bins, start_date > requested_start_date
+
+
+def summary_trend_svg(bins, mode, width, tick_count):
+    height = 270
+    left, right, top, bottom = 44, width - 18, 24, 219
+    max_value = max((item["value"] for item in bins), default=0)
+    ceiling = max(2, 2 * math.ceil(max_value * 1.15 / 2)) if mode == "day" else max(1, math.ceil(max_value * 1.15))
+
+    def x_at(index):
+        return left + (right - left) * index / (len(bins) - 1) if len(bins) > 1 else (left + right) / 2
+
+    def y_at(value):
+        return bottom - (bottom - top) * value / ceiling
+    parts = [f'<svg class="summary-trend-svg" viewBox="0 0 {width} {height}" role="img" '
+             f'aria-label="Incident trend, {html.escape(mode)} periods" xmlns="http://www.w3.org/2000/svg">']
+    for tick in (0, ceiling / 2, ceiling):
+        y = y_at(tick)
+        parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{right}" y2="{y:.1f}" stroke="#dce5da"/>')
+        tick_label = f"{tick:g}" if mode == "day" else f"{tick:.1f}"
+        parts.append(f'<text x="{left - 8}" y="{y + 4:.1f}" text-anchor="end" fill="#607068" font-size="12">{tick_label}</text>')
+    if bins:
+        points = [(x_at(index), y_at(item["value"])) for index, item in enumerate(bins)]
+        path = " ".join(f"{x:.1f},{y:.1f}" for x, y in points)
+        area = f"{left:.1f},{bottom:.1f} {path} {points[-1][0]:.1f},{bottom:.1f}"
+        parts.append(f'<polygon points="{area}" fill="#e5f2e8"/>')
+        parts.append(f'<polyline points="{path}" fill="none" stroke="#277447" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>')
+        # Keep each point's exact count available on hover and to assistive technology.
+        for (x, y), item in zip(points, bins):
+            detail = f'{item["label"]}: {item["count"]} incidents'
+            if mode != "day":
+                detail += f', {item["value"]:.1f} per day'
+            parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" fill="#277447" stroke="#fff" stroke-width="1.5"><title>{html.escape(detail)}</title></circle>')
+        indices = sorted({round(i * (len(bins) - 1) / (tick_count - 1)) for i in range(tick_count)})
+        for index in indices:
+            item = bins[index]
+            parts.append(f'<text x="{x_at(index):.1f}" y="{bottom + 28}" text-anchor="middle" fill="#405047" font-size="12">{html.escape(item["short_label"])}</text>')
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def summary_trend_html(filtered_incidents, all_incidents, generated_at, hours):
+    mode, bins, trimmed_start = summary_trend_bins(filtered_incidents, all_incidents, generated_at, hours)
+    unit = "Incidents per day" if mode == "day" else "Average incidents per day"
+    period = {"day": "Daily totals", "week": "Weekly averages", "month": "Monthly averages"}[mode]
+    rate_header = "<th>Avg/day</th>" if mode != "day" else ""
+    rows = "".join(
+        f'<tr><th scope="row">{html.escape(item["label"])}</th><td>{item["count"]}</td>'
+        + (f'<td>{item["value"]:.1f}</td>' if mode != "day" else "")
+        + '</tr>' for item in bins
+    )
+    history_note = (
+        '<p class="summary-section-note">Timeline starts with the first stored report in this range.</p>'
+        if trimmed_start else ""
+    )
+    return (
+        f'<div class="summary-trend-head"><strong>{html.escape(unit)}</strong><span>{html.escape(period)}</span></div>'
+        '<div class="summary-trend-chart">'
+        + summary_trend_svg(bins, mode, 800, 6)
+        + '<div class="summary-trend-mobile">'
+        + summary_trend_svg(bins, mode, 360, 4)
+        + '</div></div>'
+        + history_note
+        + '<details class="summary-trend-data"><summary>View exact period counts</summary>'
+        + '<div class="summary-trend-table-wrap"><table><thead><tr><th>Period</th><th>Incidents</th>'
+        + rate_header + '</tr></thead><tbody>'
+        + rows + '</tbody></table></div></details>'
+    )
+
+
 def time_bucket_counts(incidents):
     counts = {label: 0 for label in ("Overnight", "Morning", "Afternoon", "Evening", "Unknown")}
     for incident in incidents:
@@ -6833,6 +6975,7 @@ def report_shell(
         {"active": 1 if status["active_count"] else 0, "v": status["version"]},
     )
     description = f"Summary and history views for Crestmap {label.lower()} incidents."
+    range_presets = SUMMARY_HISTORY_PRESETS if current == "summary" else HISTORY_PRESETS
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -7017,6 +7160,9 @@ def report_shell(
       border: 1px solid #d8ddd2;
       border-radius: 8px;
       background: #eef1ea;
+    }}
+    .report-summary .range-tabs {{
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }}
     .range-tab {{
       display: flex;
@@ -7243,6 +7389,56 @@ def report_shell(
       font-size: inherit;
       line-height: inherit;
     }}
+    .summary-trend-section {{
+      min-width: 0;
+    }}
+    .summary-trend-head {{
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: #405047;
+      font-size: 12px;
+    }}
+    .summary-trend-head strong {{ color: #1f6840; font-size: 14px; }}
+    .summary-trend-chart {{
+      margin-top: 9px;
+      min-width: 0;
+    }}
+    .summary-trend-svg {{
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }}
+    .summary-trend-chart > .summary-trend-svg {{ display: none; }}
+    .summary-trend-mobile {{ display: block; }}
+    .summary-trend-data {{
+      margin-top: 5px;
+      color: #405047;
+      font-size: 12px;
+    }}
+    .summary-trend-data summary {{
+      width: fit-content;
+      color: #1f6840;
+      font-weight: 700;
+      cursor: pointer;
+    }}
+    .summary-trend-table-wrap {{
+      max-height: 260px;
+      margin-top: 8px;
+      overflow: auto;
+      border: 1px solid #d8ddd2;
+      border-radius: 6px;
+    }}
+    .summary-trend-data table {{ width: 100%; border-collapse: collapse; }}
+    .summary-trend-data th,
+    .summary-trend-data td {{
+      padding: 7px 9px;
+      border-bottom: 1px solid #e5eae3;
+      text-align: left;
+      white-space: nowrap;
+    }}
+    .summary-trend-data td {{ text-align: right; }}
     .search-box {{
       display: flex;
       align-items: center;
@@ -7510,6 +7706,9 @@ def report_shell(
         min-height: 34px;
         font-size: 13px;
       }}
+      .report-summary .range-tabs {{
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+      }}
       .view-tab.is-active {{
         color: #ffffff;
         background: #277447;
@@ -7561,6 +7760,9 @@ def report_shell(
       .report-history main > .section {{
         grid-column: 1 / -1;
       }}
+      .report-summary main > .summary-trend-section {{
+        grid-column: 1 / -1;
+      }}
       .section {{
         margin-top: 0;
         padding: 16px;
@@ -7571,6 +7773,10 @@ def report_shell(
       .result:last-child {{
         border-bottom: 0;
       }}
+    }}
+    @media (min-width: 600px) {{
+      .summary-trend-chart > .summary-trend-svg {{ display: block; }}
+      .summary-trend-mobile {{ display: none; }}
     }}
   </style>
   <style>{push_ui_css()}</style>
@@ -7583,12 +7789,12 @@ def report_shell(
           <div>
             <h1>{html.escape(title)}</h1>
             <div class="meta">{html.escape(subtitle)}</div>
-            <div class="meta">Window: last {hours:g}h</div>
+            <div class="meta">Window: last {html.escape(history_window_label(hours))}</div>
           </div>
           {view_menu(base_path, current, hours, region, admin_mode=admin_mode)}
         </div>
         <div class="report-nav">
-          <nav class="range-tabs" aria-label="History range">{history_controls(hours, region, extra_params)}</nav>
+          <nav class="range-tabs" aria-label="History range">{history_controls(hours, region, extra_params, range_presets)}</nav>
           <nav class="region-tabs" aria-label="Region">{region_tabs(base_path, current, hours, region, region_statuses)}</nav>
         </div>
       </div>
@@ -7635,7 +7841,7 @@ def build_summary_html(
     cleared_count = status["cleared_count"] + status["archived_count"]
     road_rows = ranked_report_rows(count_by(filtered_incidents, incident_road), limit=7)
     type_rows = ranked_report_rows(count_by(filtered_incidents, lambda incident: incident.get("type") or "Unknown"), limit=7)
-    day_rows = ranked_report_rows(daily_incident_counts(filtered_incidents, generated_at, hours), limit=None)
+    trend_html = summary_trend_html(filtered_incidents, incidents, generated_at, hours)
     time_rows = ranked_report_rows(time_bucket_counts(filtered_incidents), limit=None)
     road_options = [("all", "All roads")] + [
         (slugify_filter(road_label), road_label)
@@ -7654,7 +7860,7 @@ def build_summary_html(
     )[:5]
     recent_html = "".join(
         '<a class="result result-link" href="{}"><span class="status-pill {}">{}</span><span class="source-pill">{}</span><strong>{}</strong>{}<span>{} · #{} · Show on map</span></a>'.format(
-            html.escape(href_with_query(app_path(base_path, "/"), hours=f"{hours:g}", region=region, incident=incident.get("event_key") or "")),
+            html.escape(href_with_query(app_path(base_path, "/"), hours=f"{min(hours, 720):g}", region=region, incident=incident.get("event_key") or "")),
             incident_status_class(incident),
             html.escape(incident_status_label(incident)),
             html.escape(incident_source_label(incident)),
@@ -7686,13 +7892,18 @@ def build_summary_html(
           <button type="submit">Apply filter</button>
           <a href="{html.escape(reset_href)}">Reset</a>
         </div>
-        <div class="meta summary-result-count">{html.escape(filter_summary)} · last {hours:g} hours</div>
+        <div class="meta summary-result-count">{html.escape(filter_summary)} · last {html.escape(history_window_label(hours))}</div>
       </form>
       <section class="kpi-grid" aria-label="Incident summary">
         <div class="kpi"><strong>{status["total_count"]}</strong><span>Matching incidents</span></div>
         <div class="kpi"><strong>{active_count}</strong><span>Active CHP matches</span></div>
         <div class="kpi"><strong>{mapped_count}</strong><span>Matches with map pins</span></div>
         <div class="kpi"><strong>{cleared_count}</strong><span>Closed or archived matches</span></div>
+      </section>
+      <section class="section summary-trend-section">
+        <h2>Incidents over Time</h2>
+        <p class="summary-section-note">Filtered incident activity across the selected window. Edge periods can be partial.</p>
+        {trend_html}
       </section>
       <section class="section">
         <h2>Busiest Roads</h2>
@@ -7703,11 +7914,6 @@ def build_summary_html(
         <h2>Incident Types</h2>
         <p class="summary-section-note">Most common report types among these results.</p>
         {type_rows}
-      </section>
-      <section class="section">
-        <h2>Incidents by Day</h2>
-        <p class="summary-section-note">Includes zero-count days in the selected window.</p>
-        {day_rows}
       </section>
       <section class="section">
         <h2>Time of Day</h2>

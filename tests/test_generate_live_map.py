@@ -19,6 +19,7 @@ from generate_live_map import (
     is_motorcycle_crash,
     load_incident_by_key,
     load_incidents,
+    summary_trend_bins,
 )
 from mile_markers import MILE_MARKERS
 from incident_marker_icons import INCIDENT_MARKER_SVGS, ICON_SOURCE_NAMES
@@ -622,6 +623,32 @@ def test_summary_uses_malibu_road_buckets_for_malibu_region():
     assert "Other forest roads" not in summary_html
 
 
+def test_summary_trend_uses_weekly_and_monthly_bins_for_long_windows():
+    generated_at = "2026-11-07T12:00:00-05:00"
+    incidents = [
+        {"incident_date": "2026-05-31"},
+        {"incident_date": "2026-06-01"},
+        {"incident_date": "2026-10-01"},
+        {"incident_date": "2026-11-01"},
+    ]
+    mode, weekly, trimmed = summary_trend_bins(incidents, incidents, generated_at, 2160)
+    assert mode == "week"
+    assert not trimmed
+    assert len(weekly) <= 14
+    assert sum(item["count"] for item in weekly) == 2
+    assert all(item["days"] > 0 for item in weekly)
+
+    mode, monthly, trimmed = summary_trend_bins(incidents, incidents, generated_at, 8760)
+    assert mode == "month"
+    assert trimmed
+    assert [item["label"] for item in monthly] == [
+        "May 2026", "June 2026", "July 2026", "August 2026",
+        "September 2026", "October 2026", "November 2026",
+    ]
+    assert [item["count"] for item in monthly] == [1, 1, 0, 0, 0, 1, 1]
+    assert monthly[-1]["days"] < 8
+
+
 def test_offline_snapshot_helpers_cover_cache_validation_failure_and_recovery():
     node = shutil.which("node")
     if not node:
@@ -1151,11 +1178,13 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "Summary - Crestmap Forest Incidents" in summary_html
     assert "Busiest Roads" in summary_html
     assert "Incident Types" in summary_html
-    assert "Incidents by Day" in summary_html
+    assert "Incidents over Time" in summary_html
     assert "Time of Day" in summary_html
-    assert "Fri, May 29</span><strong>0" in summary_html
-    assert "Sat, May 30</span><strong>0" in summary_html
+    assert "Fri, May 29</th><td>0" in summary_html
+    assert "Sat, May 30</th><td>0" in summary_html
     assert "Sun, May 31" in summary_html
+    assert 'class="summary-trend-mobile"' in summary_html
+    assert "View exact period counts" in summary_html
     assert "Morning" in summary_html
     assert "2</strong><span>Matching incidents" in summary_html
     assert 'class="summary-filter-panel"' in summary_html
@@ -1172,6 +1201,8 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "Show on map" in summary_html
     assert '<nav class="range-tabs" aria-label="History range">' in summary_html
     assert '<a class="range-tab is-active" href="?hours=72&amp;region=forest" aria-current="page">72h</a>' in summary_html
+    assert '<a class="range-tab" href="?hours=2160&amp;region=forest">90d</a>' in summary_html
+    assert '<a class="range-tab" href="?hours=8760&amp;region=forest">1y</a>' in summary_html
     assert '<nav class="view-tabs" aria-label="View navigation">' not in summary_html
 
     collision_incidents = [

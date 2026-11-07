@@ -202,7 +202,7 @@ def request_target(request):
     return request.url.path
 
 
-def requested_hours(request, settings):
+def requested_hours(request, settings, max_hours=web.MAX_HISTORY_HOURS):
     raw_hours = (_query(request).get("hours") or [None])[0]
     if raw_hours is None:
         return settings.hours
@@ -210,7 +210,7 @@ def requested_hours(request, settings):
         hours = float(raw_hours)
     except (TypeError, ValueError):
         return settings.hours
-    return min(max(hours, web.MIN_HISTORY_HOURS), web.MAX_HISTORY_HOURS)
+    return min(max(hours, web.MIN_HISTORY_HOURS), max_hours)
 
 
 def requested_region(request):
@@ -1446,7 +1446,8 @@ def dispatch_request(request, send_body=True):
 
     try:
         generated_at = dt.datetime.now().astimezone().isoformat(timespec="seconds")
-        hours = requested_hours(request, settings)
+        max_hours = web.MAX_SUMMARY_HISTORY_HOURS if path in summary_paths else web.MAX_HISTORY_HOURS
+        hours = requested_hours(request, settings, max_hours=max_hours)
         with database_connection(request.app) as conn:
             current_region_statuses = region_statuses(settings, hours, conn=conn)
             incidents = load_incidents(settings.database, hours, settings.database_url, region=region, conn=conn)

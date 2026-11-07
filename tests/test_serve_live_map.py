@@ -358,6 +358,14 @@ def test_live_map_handler_serves_health_base_path_and_404(tmp_path, monkeypatch)
         assert "in 720h" in body
         assert '<a class="range-tab is-active" href="?hours=720&amp;region=forest" aria-current="page">30d</a>' in body
 
+        response = client.get("/summary?hours=9999&type=family%3Acollision")
+        body = response.text
+        assert response.status_code == 200
+        assert 'name="hours" value="8760"' in body
+        assert '<a class="range-tab is-active" href="?hours=8760&amp;region=forest&amp;type=family%3Acollision" aria-current="page">1y</a>' in body
+        assert 'href="/?hours=720&amp;region=forest"' in body
+        assert "Monthly averages" in body
+
         response = client.get("/favicon.svg")
         assert response.status_code == 200
         assert response.headers["Content-Type"] == "image/svg+xml"
