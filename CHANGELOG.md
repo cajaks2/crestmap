@@ -14,7 +14,8 @@ development eras and do not imply that every intermediate version number shipped
 ### 0.1.341 - 2026-11-08
 
 - Show incident type, location, report time, and a short traffic-impact detail
-  in shared incident link previews. Keep generic previews for ordinary map links.
+  in shared incident link previews. Spell out common CHP collision labels and
+  omit unclear dispatch shorthand. Keep generic previews for ordinary map links.
 - No schema migration or reauthentication is required.
 
 ### 0.1.340 - 2026-11-08

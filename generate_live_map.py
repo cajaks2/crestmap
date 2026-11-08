@@ -1431,6 +1431,18 @@ def incident_location_lines(incident):
 
 def incident_embed_metadata(incident):
     incident_type = " ".join(str(incident.get("type") or "Traffic incident").split())
+    collision_type = re.sub(r"^\d+[A-Z]?-", "", incident_type).casefold()
+    if collision_type.startswith("trfc collision"):
+        if "no inj" in collision_type:
+            incident_type = "Traffic collision — no injuries reported"
+        elif "unkn inj" in collision_type:
+            incident_type = "Traffic collision — injuries unknown"
+        elif "major inj" in collision_type:
+            incident_type = "Traffic collision — major injuries reported"
+        else:
+            incident_type = "Traffic collision"
+    else:
+        incident_type = re.sub(r"^\d+[A-Z]?-", "", incident_type)
     location = " ".join(str(incident.get("location") or "").split())
     title = f"{incident_type} · {location}" if location else incident_type
     source = (
@@ -1457,7 +1469,10 @@ def incident_embed_metadata(incident):
         text = re.sub(r"^\[\d+\]\s*", "", str(entry.get("text") or "")).strip()
         text = re.sub(r"\s*\[Shared\]\s*$", "", text, flags=re.IGNORECASE)
         describes_impact = re.search(
-            r"\b(?:closed|closure|blocked|blocking|delay|detour)\b",
+            r"\b(?:lanes? closed|road(?:way)? closed|full closure|"
+            r"lanes? blocked|all lanes blocked|detour|traffic delay|"
+            r"blocking (?:the )?(?:northbound|southbound|eastbound|westbound|"
+            r"nb|sb|eb|wb|lane|road))\b",
             text,
             re.IGNORECASE,
         )
@@ -1467,7 +1482,9 @@ def incident_embed_metadata(incident):
             break
     if not detail:
         location_detail = incident_description(incident)
-        if "#" not in location_detail:
+        if "#" not in location_detail and not re.search(
+            r"\b(?:JNO|JSO)\b", location_detail, re.IGNORECASE
+        ):
             detail = location_detail
     if detail:
         if len(detail) > 140:

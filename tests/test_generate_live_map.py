@@ -114,6 +114,17 @@ def test_incident_embed_metadata_uses_traffic_note_or_location_detail():
     incident["location_desc"] = "Near mile marker 12"
     assert incident_embed_metadata(incident)[1].endswith("Near mile marker 12")
 
+    incident.update({
+        "type": "1182-Trfc Collision-No Inj",
+        "location": "Mt Wilson Red Box Rd / Angeles Crest Hwy",
+        "location_desc": "MT WILSON RED BOX JNO MM 2.00",
+        "detail_entries": [{"section": "Detail Information", "text": "[10] 98-62 NEG BLOCKING"}],
+    })
+    assert incident_embed_metadata(incident) == (
+        "Traffic collision — no injuries reported · Mt Wilson Red Box Rd / Angeles Crest Hwy",
+        "CHP report from Nov 8, 2026 at 1:52 PM.",
+    )
+
 
 def test_mile_marker_snapshot_covers_crest_and_forest_corridors():
     crest_miles = [point[0] for point in MILE_MARKERS["crest"]]
