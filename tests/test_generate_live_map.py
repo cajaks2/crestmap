@@ -58,6 +58,7 @@ def test_incident_icon_pack_has_valid_svg_for_each_map_category():
         "collision": "car_crash",
         "motorcycle": "Font Awesome Free motorcycle",
         "fatality": "hexagon",
+        "sig_alert": "custom octagon alert",
         "hazard": "warning",
         "closure": "block",
         "fire": "local_fire_department",
@@ -69,7 +70,7 @@ def test_incident_icon_pack_has_valid_svg_for_each_map_category():
         root = ET.fromstring(svg)
         assert root.attrib["viewBox"] == "0 -960 960 960"
         assert root.attrib["fill"] == "currentColor"
-        assert len(root.findall("path")) == (2 if kind == "fatality" else 1)
+        assert len(root.findall("path")) == (2 if kind in {"fatality", "sig_alert"} else 1)
         if kind == "motorcycle":
             bike = root.find("g")
             assert bike is not None
@@ -1120,6 +1121,7 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "updateWhenZooming: !compactMapRendering" in html
     assert "function markerIcon" in html
     assert 'label.includes("1144-fatality") ? "fatality"' in html
+    assert ': /sig\\s?alert/.test(label) ? "sig_alert"' in html
     assert ': incident.motorcycle_crash ? "motorcycle"' in html
     assert ': /collision|hit and run|motor vehicle accident|fatality/.test(label) ? "collision"' in html
     assert 'is-${category}' in html
@@ -1127,6 +1129,7 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert 'M382-690h255v75H465v102h148v75H465v168h-83Z' in html
     assert '<span class="map-key-icon-item">' in html
     assert 'Fatality</span>' in html
+    assert 'SIG Alert</span>' in html
     assert 'Motorcycle crash</span>' in html
     assert '"motorcycle":"<svg viewBox=\\"0 -960 960 960\\" fill=\\"currentColor\\"' in html
     assert '"fire":"<svg viewBox=\\"0 -960 960 960\\" fill=\\"currentColor\\"' in html

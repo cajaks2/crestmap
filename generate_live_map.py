@@ -1120,7 +1120,8 @@ def view_menu(base_path, current, hours, region="forest", admin_mode=False, airc
 def incident_marker_key():
     icon_labels = (
         ("collision", "Crash"), ("motorcycle", "Motorcycle crash"),
-        ("fatality", "Fatality"), ("hazard", "Hazard"),
+        ("fatality", "Fatality"), ("sig_alert", "SIG Alert"),
+        ("hazard", "Hazard"),
         ("closure", "Closure"), ("fire", "Fire"),
         ("medical", "Medical aid"), ("roadwork", "Roadwork"),
         ("other", "Other"),
@@ -5050,6 +5051,7 @@ def build_html(
     function markerIcon(incident, selected = false, pulsing = false) {{
       const label = String(incident.type || "").toLowerCase();
       const category = label.includes("1144-fatality") ? "fatality"
+        : /sig\\s?alert/.test(label) ? "sig_alert"
         : incident.motorcycle_crash ? "motorcycle"
         : /collision|hit and run|motor vehicle accident|fatality/.test(label) ? "collision"
         : /hazard|debris|animal|tree|rock|flood/.test(label) ? "hazard"

@@ -8,6 +8,7 @@ ICON_SOURCE_NAMES = {
     "collision": "car_crash",
     "motorcycle": "Font Awesome Free motorcycle",
     "fatality": "hexagon",
+    "sig_alert": "custom octagon alert",
     "hazard": "warning",
     "closure": "block",
     "fire": "local_fire_department",
@@ -26,6 +27,7 @@ _PATHS = {
     'roadwork': 'M756-120 537-339l84-84 219 219-84 84Zm-552 0-84-84 276-276-68-68-28 28-51-51v82l-28 28-121-121 28-28h82l-50-50 142-142q20-20 43-29t47-9q24 0 47 9t43 29l-92 92 50 50-28 28 68 68 90-90q-4-11-6.5-23t-2.5-24q0-59 40.5-99.5T701-841q15 0 28.5 3t27.5 9l-99 99 72 72 99-99q7 14 9.5 27.5T841-701q0 59-40.5 99.5T701-561q-12 0-24-2t-23-7L204-120Z',
     'other': 'M513.5-254.5Q528-269 528-290t-14.5-35.5Q499-340 478-340t-35.5 14.5Q428-311 428-290t14.5 35.5Q457-240 478-240t35.5-14.5ZM442-394h74q0-33 7.5-52t42.5-52q26-26 41-49.5t15-56.5q0-56-41-86t-97-30q-57 0-92.5 30T342-618l66 26q5-18 22.5-39t53.5-21q32 0 48 17.5t16 38.5q0 20-12 37.5T506-526q-44 39-54 59t-10 73Zm38 314q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z',
     'fatality': 'M272-120 64-480l208-360h416l208 360-208 360H272Zm46-80h324l161-280-161-280H318L156-480l162 280Zm162-280Z',
+    'sig_alert': 'M280-80 80-280v-400l200-200h400l200 200v400L680-80H280Zm33-80h334l153-153v-334L647-800H313L160-647v334l153 153Z',
 }
 
 # The exclamation badge is the upper-right shape of Material's car_crash glyph.
@@ -41,9 +43,10 @@ def incident_icon_svg(kind):
             f'<path d="{_CRASH_BADGE_PATH}"/></svg>'
         )
     f_path = '<path d="M382-690h255v75H465v102h148v75H465v168h-83Z"/>' if kind == "fatality" else ""
+    alert_path = '<path d="M440-660h80v320h-80Zm0 400h80v80h-80Z"/>' if kind == "sig_alert" else ""
     return (
         '<svg viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">'
-        f'<path d="{path}"/>{f_path}</svg>'
+        f'<path d="{path}"/>{f_path}{alert_path}</svg>'
     )
 
 

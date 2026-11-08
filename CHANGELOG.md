@@ -11,6 +11,11 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.339 - 2026-11-08
+
+- Give SIG Alerts their own octagon and exclamation map icon, including the icon key.
+- No schema migration or reauthentication is required.
+
 ### 0.1.338 - 2026-11-07
 
 - Replace the Summary page's long daily bar list with a responsive time trend
