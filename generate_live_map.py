@@ -1429,6 +1429,53 @@ def incident_location_lines(incident):
     return location or description, description if location else ""
 
 
+def incident_embed_metadata(incident):
+    incident_type = " ".join(str(incident.get("type") or "Traffic incident").split())
+    location = " ".join(str(incident.get("location") or "").split())
+    title = f"{incident_type} · {location}" if location else incident_type
+    source = (
+        "WildWeb dispatch"
+        if (incident.get("source") or "chp").casefold() == "wildweb"
+        else "CHP"
+    )
+    date_text = str(incident.get("incident_date") or "").strip()
+    try:
+        report_date = dt.date.fromisoformat(date_text)
+        when = f"{report_date:%b} {report_date.day}, {report_date.year}"
+    except ValueError:
+        when = ""
+    time_text = " ".join(str(incident.get("incident_time") or "").split())
+    if time_text:
+        when = f"{when} at {time_text}" if when else time_text
+    description = f"{source} report" + (f" from {when}" if when else "") + "."
+
+    # Share only a short traffic-impact update, never an arbitrary dispatch note.
+    detail = ""
+    for entry in incident.get("detail_entries") or []:
+        if entry.get("section") != "Detail Information":
+            continue
+        text = re.sub(r"^\[\d+\]\s*", "", str(entry.get("text") or "")).strip()
+        text = re.sub(r"\s*\[Shared\]\s*$", "", text, flags=re.IGNORECASE)
+        describes_impact = re.search(
+            r"\b(?:closed|closure|blocked|blocking|delay|detour)\b",
+            text,
+            re.IGNORECASE,
+        )
+        has_contact = re.search(r"\b\d{3}[-.) ]?\d{3}[-. ]?\d{4}\b|@", text)
+        if describes_impact and not has_contact:
+            detail = text
+            break
+    if not detail:
+        location_detail = incident_description(incident)
+        if "#" not in location_detail:
+            detail = location_detail
+    if detail:
+        if len(detail) > 140:
+            detail = detail[:137].rsplit(" ", 1)[0] + "…"
+        description += f" {detail}"
+    return title, description
+
+
 def incident_recency(incident):
     value = (
         incident.get("source_reported_at")
@@ -1486,6 +1533,7 @@ def build_html(
     media_max_video_seconds=60,
     aircraft_tracking_enabled=False,
     app_version="dev",
+    linked_incident=None,
 ):
     region = normalize_region(region)
     map_label = region_label(region)
@@ -1522,6 +1570,12 @@ def build_html(
         public_url,
         {"active": 1 if active_count else 0, "v": status["version"]},
     )
+    page_url = urls["canonical"]
+    if linked_incident and linked_incident.get("event_key"):
+        title, description = incident_embed_metadata(linked_incident)
+        page_url = href_with_query(
+            page_url, region=region, incident=linked_incident["event_key"]
+        )
     base = normalize_base_path(base_path)
     asset_base = "" if base == "/" else base
     if public_url:
@@ -1616,13 +1670,13 @@ def build_html(
   <title>{html.escape(title)}</title>
   <meta name="description" content="{html.escape(description)}">
   <meta name="robots" content="index,follow,max-image-preview:large">
-  <link rel="canonical" href="{html.escape(urls["canonical"])}">
+  <link rel="canonical" href="{html.escape(page_url)}">
   <link rel="icon" href="{html.escape(urls["favicon"])}" type="image/svg+xml">
 {pwa_head_html(base_path)}
   <meta property="og:type" content="website">
   <meta property="og:title" content="{html.escape(title)}">
   <meta property="og:description" content="{html.escape(description)}">
-  <meta property="og:url" content="{html.escape(urls["canonical"])}">
+  <meta property="og:url" content="{html.escape(page_url)}">
   <meta property="og:image" content="{html.escape(urls["og_image"])}">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">

@@ -783,6 +783,40 @@ def test_live_map_handler_serves_red_favicon_when_active(tmp_path):
         assert '<link rel="icon" href="https://crestmap.us/favicon.svg?active=1&amp;v=' in body
 
 
+def test_shared_incident_link_has_incident_preview(tmp_path):
+    database = tmp_path / "chp.sqlite"
+    event = {
+        **sample_event(),
+        "type": "SIG Alert",
+        "location": "Angeles Forest Hwy / Big Tujunga Canyon Rd",
+        "location_desc": "",
+        "detail_entries": [
+            {"section": "Detail Information", "text": "[2] NB AND SB LANES CLOSED DUE TO TC"},
+        ],
+    }
+    conn = connect_database(database)
+    upsert_active_event(conn, event)
+    insert_observation(conn, event, "active")
+    conn.commit()
+    conn.close()
+
+    with make_client(database) as client:
+        response = client.get("/", params={"hours": "24", "region": "forest", "incident": event["event_key"]})
+        assert response.status_code == 200
+        head = response.text.split("</head>", 1)[0]
+        assert '<meta property="og:title" content="SIG Alert · Angeles Forest Hwy / Big Tujunga Canyon Rd">' in head
+        assert '<meta property="og:description" content="CHP report from Jun 8, 2026 at 12:34 PM. NB AND SB LANES CLOSED DUE TO TC">' in head
+        assert '<meta name="twitter:title" content="SIG Alert · Angeles Forest Hwy / Big Tujunga Canyon Rd">' in head
+        assert '<meta name="twitter:description" content="CHP report from Jun 8, 2026 at 12:34 PM. NB AND SB LANES CLOSED DUE TO TC">' in head
+        assert '<meta property="og:url" content="https://crestmap.us/?region=forest&amp;incident=LACC%7C2026-06-08%7C1234">' in head
+        assert '<link rel="canonical" href="https://crestmap.us/?region=forest&amp;incident=LACC%7C2026-06-08%7C1234">' in head
+
+        generic = client.get("/", params={"region": "forest", "incident": "missing"})
+        assert '<meta property="og:title" content="Crestmap Forest Incidents' in generic.text
+        other_region = client.get("/", params={"region": "malibu", "incident": event["event_key"]})
+        assert '<meta property="og:title" content="Crestmap Malibu Incidents' in other_region.text
+
+
 def test_incident_comments_are_published_automatically(tmp_path):
     database = tmp_path / "chp.sqlite"
     event_key = "LACC|2026-06-08|1234"

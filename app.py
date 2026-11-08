@@ -1518,6 +1518,7 @@ def dispatch_request(request, send_body=True):
                 media_max_video_seconds=settings.media_max_video_seconds,
                 aircraft_tracking_enabled=settings.aircraft_tracking_enabled,
                 app_version=settings.service_version,
+                linked_incident=linked_incident,
             ).encode("utf-8")
     except Exception as exc:
         web.log_exception(

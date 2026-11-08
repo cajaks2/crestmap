@@ -14,6 +14,7 @@ from generate_live_map import (
     build_html,
     build_summary_html,
     include_linked_incident,
+    incident_embed_metadata,
     incident_location_lines,
     incident_status,
     is_motorcycle_crash,
@@ -90,6 +91,28 @@ def test_incident_icon_pack_has_valid_svg_for_each_map_category():
             badge = root.find("path").attrib["d"]
             assert badge.startswith("M680-480")
             assert badge[len("M680-480"):] in INCIDENT_MARKER_SVGS["collision"]
+
+
+def test_incident_embed_metadata_uses_traffic_note_or_location_detail():
+    incident = {
+        "type": "SIG Alert",
+        "location": "Angeles Forest Hwy / Big Tujunga Canyon Rd",
+        "incident_date": "2026-11-08",
+        "incident_time": "1:52 PM",
+        "location_desc": "",
+        "detail_entries": [
+            {"section": "Unit Information", "text": "Unit At Scene"},
+            {"section": "Detail Information", "text": "[2] NB AND SB LANES CLOSED DUE TO TC [Shared]"},
+        ],
+    }
+    assert incident_embed_metadata(incident) == (
+        "SIG Alert · Angeles Forest Hwy / Big Tujunga Canyon Rd",
+        "CHP report from Nov 8, 2026 at 1:52 PM. NB AND SB LANES CLOSED DUE TO TC",
+    )
+
+    incident["detail_entries"] = [{"section": "Detail Information", "text": "Call 626-555-0100 for blocked lane"}]
+    incident["location_desc"] = "Near mile marker 12"
+    assert incident_embed_metadata(incident)[1].endswith("Near mile marker 12")
 
 
 def test_mile_marker_snapshot_covers_crest_and_forest_corridors():

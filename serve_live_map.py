@@ -1437,6 +1437,7 @@ class LiveMapHandler(BaseHTTPRequestHandler):
                     region=region,
                     region_statuses=region_statuses,
                     last_scrape=last_scrape,
+                    linked_incident=linked_incident,
                 ).encode("utf-8")
         except Exception as exc:
             log_exception(
