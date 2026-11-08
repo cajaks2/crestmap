@@ -43,7 +43,7 @@ def incident_icon_svg(kind):
             f'<path d="{_CRASH_BADGE_PATH}"/></svg>'
         )
     f_path = '<path d="M382-690h255v75H465v102h148v75H465v168h-83Z"/>' if kind == "fatality" else ""
-    alert_path = '<path d="M440-660h80v320h-80Zm0 400h80v80h-80Z"/>' if kind == "sig_alert" else ""
+    alert_path = '<path d="M440-730h80v320h-80Zm0 400h80v80h-80Z"/>' if kind == "sig_alert" else ""
     return (
         '<svg viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">'
         f'<path d="{path}"/>{f_path}{alert_path}</svg>'

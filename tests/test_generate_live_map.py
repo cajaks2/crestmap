@@ -71,6 +71,8 @@ def test_incident_icon_pack_has_valid_svg_for_each_map_category():
         assert root.attrib["viewBox"] == "0 -960 960 960"
         assert root.attrib["fill"] == "currentColor"
         assert len(root.findall("path")) == (2 if kind in {"fatality", "sig_alert"} else 1)
+        if kind == "sig_alert":
+            assert root.findall("path")[1].attrib["d"] == "M440-730h80v320h-80Zm0 400h80v80h-80Z"
         if kind == "motorcycle":
             bike = root.find("g")
             assert bike is not None

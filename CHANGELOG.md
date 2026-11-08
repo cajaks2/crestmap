@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.340 - 2026-11-08
+
+- Center the SIG Alert exclamation mark within its octagon and separate its dot
+  from the lower border.
+- No schema migration or reauthentication is required.
+
 ### 0.1.339 - 2026-11-08
 
 - Give SIG Alerts their own octagon and exclamation map icon, including the icon key.
