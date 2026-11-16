@@ -22,6 +22,7 @@ from push_notifications import (
     SOURCES as PUSH_SOURCES,
 )
 from generate_live_map import (
+    age_wildweb_incident,
     collapse_duplicate_incidents,
     wildweb_in_window,
     build_about_html,
@@ -324,6 +325,7 @@ def load_metric_status(conn, hours, region="forest", placeholder="?"):
     ).fetchall()
     rows = [dict(row) for row in rows if wildweb_in_window(dict(row), cutoff_at)]
     for row in rows:
+        age_wildweb_incident(row)
         try:
             row["detail_entries"] = json.loads(row.pop("details_json") or "[]")
         except (TypeError, ValueError):

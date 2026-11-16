@@ -156,24 +156,36 @@ def region_viewport(region):
     return REGION_VIEWPORTS[normalize_region(region)]
 
 
-WILDWEB_VISIBLE_HOURS = 8
+WILDWEB_REPORTED_HOURS = 8
 
 
 def wildweb_in_window(incident, cutoff):
-    """Respect the selected report window and expire WildWeb after first sighting."""
+    """Keep WildWeb history according to the selected source-report window."""
     if (incident.get("source") or "chp") != "wildweb":
         return True
     try:
         reported_at = dt.datetime.fromisoformat(
             str(incident.get("source_reported_at") or incident.get("first_seen")).replace("Z", "+00:00")
         )
-        first_seen = dt.datetime.fromisoformat(
-            str(incident.get("first_seen") or incident.get("source_reported_at")).replace("Z", "+00:00")
-        )
     except (TypeError, ValueError):
         return False
-    expires_at = dt.datetime.now().astimezone() - dt.timedelta(hours=WILDWEB_VISIBLE_HOURS)
-    return reported_at.timestamp() >= cutoff.timestamp() and first_seen.timestamp() >= expires_at.timestamp()
+    return reported_at.timestamp() >= cutoff.timestamp()
+
+
+def age_wildweb_incident(incident):
+    """Show old listed WildWeb reports as archived without changing stored data."""
+    if (incident.get("source") or "chp") != "wildweb" or incident.get("status") != "reported":
+        return incident
+    try:
+        first_seen = dt.datetime.fromisoformat(str(incident.get("first_seen")).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return incident
+    archived_at = first_seen + dt.timedelta(hours=WILDWEB_REPORTED_HOURS)
+    if archived_at.timestamp() <= dt.datetime.now().astimezone().timestamp():
+        incident["status"] = "archived"
+        incident["source_status"] = "aged_out"
+        incident["cleared_at"] = archived_at.isoformat(timespec="seconds")
+    return incident
 
 
 def normalized_incident_text(value):
@@ -311,6 +323,7 @@ def load_incidents(database, hours, database_url=None, region="forest", conn=Non
 def hydrate_incident(row, region):
     incident = clear_coordinates_outside_region_bounds(dict(row), region)
     incident["source"] = incident.get("source") or "chp"
+    age_wildweb_incident(incident)
     incident["source_event_id"] = incident.get("source_event_id") or incident.get("event_key")
     incident["coordinate_confidence"] = incident.get("coordinate_confidence") or (
         "exact" if incident.get("latitude") is not None and incident.get("longitude") is not None else "missing"
@@ -8263,7 +8276,7 @@ def build_about_html(
         <div class="result"><strong>Active incident details</strong><span>Unchanged active incidents are refreshed about every 3 minutes.</span></div>
         <div class="result"><strong>Air temperature</strong><span>Checked about every 15 minutes while the temperature layer is enabled and the page is visible. Also checked when you return to the tab or reconnect. Weather responses may be reused for up to 15 minutes; station observation times and forecast validity times can be earlier than the check time.</span></div>
         <div class="result"><strong>Road-weather forecasts and NWS alerts</strong><span>Checked together about every 15 minutes while the road-weather layer is enabled and the page is visible. Also checked when you return to the tab or reconnect. Responses may be reused for up to 15 minutes. Forecasts cover the next six hours.</span></div>
-        <div class="result"><strong>Status meaning</strong><span>CHP records use Active and Cleared. WildWeb records say Reported unless the source explicitly provides Contained, Controlled, or Out. No longer listed and Archived do not mean Crestmap independently confirmed the incident is over. Map badges use red for active, amber for reported, and gray for cleared or archived; the pictograph shows the incident type.</span></div>
+        <div class="result"><strong>Status meaning</strong><span>CHP records use Active and Cleared. WildWeb records say Reported unless the source explicitly provides Contained, Controlled, or Out. Still-listed WildWeb reports appear as Archived after eight hours from first sighting. No longer listed and Archived do not mean Crestmap independently confirmed the incident is over. Map badges use red for active, amber for reported, and gray for cleared or archived; the pictograph shows the incident type.</span></div>
         <div class="result"><strong>History</strong><span>Cleared and archived records stay in the database and are shown when they fall inside the selected time window.</span></div>
       </section>
       <section class="section" id="push-notifications">

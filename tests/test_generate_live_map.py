@@ -397,7 +397,7 @@ def test_archived_wildweb_uses_report_time_for_history_window_and_metrics(tmp_pa
     assert metrics["reported_count"] == 0
 
 
-def test_wildweb_visibility_ages_by_report_time_and_collapses_exact_duplicates(tmp_path):
+def test_wildweb_ages_to_archived_but_stays_in_selected_window(tmp_path):
     database = tmp_path / "wildweb-dedup.sqlite"
     conn = connect_database(database)
     now = dt.datetime.now().astimezone()
@@ -434,10 +434,14 @@ def test_wildweb_visibility_ages_by_report_time_and_collapses_exact_duplicates(t
     stored_count = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
     conn.close()
 
-    assert {incident["source_event_id"] for incident in incidents} == {"original", "different-place", "stale"}
-    assert {incident["source_event_id"] for incident in load_incidents(database, 24)} == {"original", "different-place"}
+    assert {incident["source_event_id"] for incident in incidents} == {"original", "different-place", "stale", "expired"}
+    assert {incident["source_event_id"] for incident in load_incidents(database, 24)} == {"original", "different-place", "expired"}
+    expired = next(incident for incident in incidents if incident["source_event_id"] == "expired")
+    assert expired["status"] == "archived"
+    assert expired["source_status"] == "aged_out"
+    assert load_incident_by_key(database, expired["event_key"])["status"] == "archived"
     assert metrics["reported_count"] == 3
-    assert metrics["total_count"] == 3
+    assert metrics["total_count"] == 4
     assert stored_count == 5
 
 

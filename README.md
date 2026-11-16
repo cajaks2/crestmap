@@ -21,9 +21,10 @@ WildWeb status is intentionally conservative:
 - A record older than `WILDWEB_MAX_AGE_HOURS` becomes `Archived`.
 - The source's incident `date` is interpreted as Pacific local time. A feed-level `retrieved` timestamp without a time zone is interpreted as UTC.
 
-The map, incident list, and incident counts show WildWeb reports for eight hours
-after Crestmap first sees them, even if the source continues listing them. The
-selected time window also applies to their source report time. Matching
+The map, incident list, and incident counts show WildWeb reports as amber for
+eight hours after Crestmap first sees them, then gray as Archived even if the
+source continues listing them. The selected time window applies to their source
+report time, so older gray reports remain available in longer windows. Matching
 records with the same report time, type, name, location, and status appear once;
 their separate source records remain stored. The map's **WildWeb reports** layer
 toggle hides these reports from the map and incident list. This choice is saved

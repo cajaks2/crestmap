@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.343 - 2026-11-16
+
+- Keep WildWeb reports in the selected history window after eight hours, but
+  display still-listed reports as gray Archived records rather than amber.
+- No schema migration or reauthentication is required.
+
 ### 0.1.342 - 2026-11-16
 
 - Limit visible WildWeb reports to eight hours after first sighting, collapse
