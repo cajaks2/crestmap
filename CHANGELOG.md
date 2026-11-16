@@ -11,6 +11,16 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.342 - 2026-11-16
+
+- Limit visible WildWeb reports to eight hours after first sighting, collapse
+  exact same-time/text duplicates in incident views and counts, and add a
+  browser-saved toggle to hide WildWeb map pins and list entries.
+- Collapse CHP records with matching locations, nearby dispatch times, and a
+  shared substantive detail line in incident views and counts, while retaining
+  their source IDs.
+- No schema migration or reauthentication is required.
+
 ### 0.1.341 - 2026-11-08
 
 - Show incident type, location, report time, and a short traffic-impact detail

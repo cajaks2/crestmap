@@ -261,6 +261,9 @@ def test_build_html_labels_wildweb_report_without_claiming_it_is_active_or_clear
     assert "wildWebReportedVisualAge" not in html
     assert "--incident-age-saturation" not in html
     assert 'button.className = "incident"' in html
+    assert 'data-wildweb-toggle' in html
+    assert 'crestmap-wildweb-reports' in html
+    assert 'displayedIncidents.forEach((incident) =>' in html
     assert '"medical":"<svg viewBox=\\"0 -960 960 960\\" fill=\\"currentColor\\"' in html
     assert 'fill="#c63735"' not in html
     assert ".incident-marker.is-cleared .incident-marker-core" in html
@@ -329,7 +332,7 @@ def test_load_incidents_sorts_wildweb_by_source_report_time_not_poll_time(tmp_pa
             "source": "wildweb",
             "source_event_id": "older-report",
             "source_status": "listed",
-            "source_reported_at": (now - dt.timedelta(hours=24)).isoformat(timespec="seconds"),
+            "source_reported_at": (now - dt.timedelta(hours=12)).isoformat(timespec="seconds"),
             "status": "reported",
         }
     )
@@ -363,7 +366,7 @@ def test_archived_wildweb_uses_report_time_for_history_window_and_metrics(tmp_pa
     now = dt.datetime.now().astimezone()
     for name, report_age, status in (
         ("old-archived", 120, "archived"),
-        ("recent-archived", 24, "archived"),
+        ("recent-archived", 12, "archived"),
         ("old-reported", 120, "reported"),
     ):
         row = incident_row(f"wildweb|CAANCC|{name}", status, now.isoformat(timespec="seconds"), name)
@@ -388,10 +391,88 @@ def test_archived_wildweb_uses_report_time_for_history_window_and_metrics(tmp_pa
     metrics = load_metric_status(conn, 72)
     conn.close()
 
-    assert {incident["source_event_id"] for incident in incidents} == {"recent-archived", "old-reported"}
-    assert metrics["total_count"] == 2
-    assert metrics["mapped_count"] == 2
-    assert metrics["reported_count"] == 1
+    assert {incident["source_event_id"] for incident in incidents} == {"recent-archived"}
+    assert metrics["total_count"] == 1
+    assert metrics["mapped_count"] == 1
+    assert metrics["reported_count"] == 0
+
+
+def test_wildweb_visibility_ages_by_report_time_and_collapses_exact_duplicates(tmp_path):
+    database = tmp_path / "wildweb-dedup.sqlite"
+    conn = connect_database(database)
+    now = dt.datetime.now().astimezone()
+    for name, age, location in (
+        ("original", 2, "ANGELES CREST HWY MM 33"),
+        ("duplicate", 2, "  angeles  crest hwy mm 33 "),
+        ("different-place", 2, "ANGELES CREST HWY MM 34"),
+        ("stale", 30, "ANGELES CREST HWY MM 35"),
+        ("expired", 2, "ANGELES CREST HWY MM 36"),
+    ):
+        row = incident_row(f"wildweb|CAANCC|{name}", "reported", now.isoformat(timespec="seconds"), name)
+        row.update({
+            "center": "CAANCC",
+            "source": "wildweb",
+            "source_event_id": name,
+            "source_status": "listed",
+            "status": "reported",
+            "source_reported_at": (now - dt.timedelta(hours=age)).isoformat(timespec="seconds"),
+            "type": "Miscellaneous",
+            "location_desc": "ROAD HAZARD",
+            "location": location,
+        })
+        upsert_active_event(conn, row)
+        insert_observation(conn, row, "reported")
+        if name == "expired":
+            conn.execute(
+                "UPDATE events SET first_seen = ? WHERE event_key = ?",
+                ((now - dt.timedelta(hours=9)).isoformat(timespec="seconds"), row["event_key"]),
+            )
+    conn.commit()
+
+    incidents = load_incidents(database, 72, conn=conn)
+    metrics = load_metric_status(conn, 72)
+    stored_count = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+    conn.close()
+
+    assert {incident["source_event_id"] for incident in incidents} == {"original", "different-place", "stale"}
+    assert {incident["source_event_id"] for incident in load_incidents(database, 24)} == {"original", "different-place"}
+    assert metrics["reported_count"] == 3
+    assert metrics["total_count"] == 3
+    assert stored_count == 5
+
+
+def test_chp_shared_detail_only_collapses_same_dispatch(tmp_path):
+    database = tmp_path / "chp-dedup.sqlite"
+    conn = connect_database(database)
+    now = dt.datetime.now().astimezone().isoformat(timespec="seconds")
+    for name, detail, location, latitude, incident_time in (
+        ("original", "[1] VEHICLE BLOCKING THE RIGHT LANE", "Angeles Forest Hwy", 34.31, "7:36 AM"),
+        ("duplicate", "[1] VEHICLE BLOCKING THE RIGHT LANE", " angeles  forest hwy ", 34.31, "7:46 AM"),
+        ("different-detail", "[1] VEHICLE BLOCKING THE LEFT LANE", "Angeles Forest Hwy", 34.31, "7:36 AM"),
+        ("different-place", "[1] VEHICLE BLOCKING THE RIGHT LANE", "Angeles Crest Hwy", 34.31, "7:36 AM"),
+        ("different-coordinates", "[1] VEHICLE BLOCKING THE RIGHT LANE", "Angeles Forest Hwy", 34.40, "7:36 AM"),
+        ("different-time", "[1] VEHICLE BLOCKING THE RIGHT LANE", "Angeles Forest Hwy", 34.31, "8:36 AM"),
+    ):
+        row = incident_row(f"LACC|2026-05-31|{name}", "active", now, name)
+        row["location"] = location
+        row["latitude"] = latitude
+        row["incident_time"] = incident_time
+        row["detail_entries"] = [{"section": "Detail Information", "time": "7:37 AM", "entry_no": "1", "text": detail}]
+        upsert_active_event(conn, row)
+        insert_observation(conn, row, "active")
+    conn.commit()
+
+    incidents = load_incidents(database, 72, conn=conn)
+    metrics = load_metric_status(conn, 72)
+    stored_count = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+    conn.close()
+
+    assert {incident["incident_no"] for incident in incidents} == {
+        "original", "different-detail", "different-place", "different-coordinates", "different-time"
+    }
+    assert metrics["active_count"] == 5
+    assert metrics["total_count"] == 5
+    assert stored_count == 6
 
 
 def test_load_incident_by_key_finds_incident_outside_window(tmp_path):

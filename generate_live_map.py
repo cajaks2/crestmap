@@ -156,19 +156,91 @@ def region_viewport(region):
     return REGION_VIEWPORTS[normalize_region(region)]
 
 
-def archived_wildweb_in_window(incident, cutoff):
-    """Keep archived WildWeb reports only while their report time is in range."""
-    if (incident.get("source") or "chp") != "wildweb" or incident.get("status") != "archived":
+WILDWEB_VISIBLE_HOURS = 8
+
+
+def wildweb_in_window(incident, cutoff):
+    """Respect the selected report window and expire WildWeb after first sighting."""
+    if (incident.get("source") or "chp") != "wildweb":
         return True
-    for value in (incident.get("source_reported_at"), incident.get("first_seen")):
-        if not value:
-            continue
-        try:
-            reported_at = dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-            return reported_at.timestamp() >= cutoff.timestamp()
-        except (TypeError, ValueError):
-            continue
-    return False
+    try:
+        reported_at = dt.datetime.fromisoformat(
+            str(incident.get("source_reported_at") or incident.get("first_seen")).replace("Z", "+00:00")
+        )
+        first_seen = dt.datetime.fromisoformat(
+            str(incident.get("first_seen") or incident.get("source_reported_at")).replace("Z", "+00:00")
+        )
+    except (TypeError, ValueError):
+        return False
+    expires_at = dt.datetime.now().astimezone() - dt.timedelta(hours=WILDWEB_VISIBLE_HOURS)
+    return reported_at.timestamp() >= cutoff.timestamp() and first_seen.timestamp() >= expires_at.timestamp()
+
+
+def normalized_incident_text(value):
+    return " ".join(str(value or "").split()).casefold()
+
+
+def chp_detail_texts(incident):
+    return {
+        normalized_incident_text(entry.get("text"))
+        for entry in incident.get("detail_entries") or []
+        if entry.get("section") == "Detail Information"
+        and len(normalized_incident_text(entry.get("text"))) >= 20
+    }
+
+
+def matching_incident_coordinates(first, second):
+    first_coords = (first.get("latitude"), first.get("longitude"))
+    second_coords = (second.get("latitude"), second.get("longitude"))
+    if None in first_coords or None in second_coords:
+        return True
+    return abs(first_coords[0] - second_coords[0]) < 0.01 and abs(first_coords[1] - second_coords[1]) < 0.01
+
+
+def chp_dispatch_datetime(incident):
+    try:
+        return dt.datetime.strptime(
+            f"{incident['incident_date']} {incident['incident_time']}", "%Y-%m-%d %I:%M %p"
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def collapse_duplicate_incidents(incidents):
+    """Hide high-confidence duplicate source records without changing stored identities."""
+    seen = set()
+    chp_candidates = {}
+    unique = []
+    for incident in incidents:
+        source = incident.get("source") or "chp"
+        if source == "wildweb":
+            reported_at = incident.get("source_reported_at")
+            text = tuple(normalized_incident_text(incident.get(field))
+                         for field in ("type", "location_desc", "location"))
+            if reported_at and (text[1] or text[2]):
+                signature = (incident.get("region"), incident.get("status"), reported_at, *text)
+                if signature in seen:
+                    continue
+                seen.add(signature)
+        elif source == "chp":
+            details = chp_detail_texts(incident)
+            location = normalized_incident_text(incident.get("location"))
+            dispatched_at = chp_dispatch_datetime(incident)
+            if details and location and dispatched_at:
+                signature = (
+                    incident.get("center"), incident.get("region"), incident.get("incident_date"),
+                    normalized_incident_text(incident.get("type")), location,
+                    normalized_incident_text(incident.get("location_desc")),
+                )
+                candidates = chp_candidates.setdefault(signature, [])
+                if any(details & previous[0]
+                       and abs(dispatched_at - previous[2]) <= dt.timedelta(minutes=30)
+                       and matching_incident_coordinates(incident, previous[1])
+                       for previous in candidates):
+                    continue
+                candidates.append((details, incident, dispatched_at))
+        unique.append(incident)
+    return unique
 
 
 def load_incidents(database, hours, database_url=None, region="forest", conn=None):
@@ -226,14 +298,14 @@ def load_incidents(database, hours, database_url=None, region="forest", conn=Non
     incidents = []
     for row in rows:
         incident = hydrate_incident(row, region)
-        if archived_wildweb_in_window(incident, cutoff_at) and (
+        if wildweb_in_window(incident, cutoff_at) and (
             region != "forest" or not is_nearby_forest_highway_incident(incident)
         ):
             incidents.append(incident)
     incidents.sort(key=lambda incident: str(incident.get("incident_no") or ""), reverse=True)
     incidents.sort(key=incident_recency, reverse=True)
     incidents.sort(key=lambda incident: 0 if incident.get("status") == "active" else 1)
-    return incidents
+    return collapse_duplicate_incidents(incidents)
 
 
 def hydrate_incident(row, region):
@@ -1149,6 +1221,9 @@ def map_layer_menu(region="forest", aircraft_tracking_enabled=False):
         '<button type="button" class="view-menu-row is-active" data-incident-layer-toggle aria-label="Toggle incidents" '
         'aria-pressed="true"><span class="view-menu-label">Incidents</span>'
         '<span class="view-menu-description">Map pins</span><span class="map-layer-switch" aria-hidden="true"></span></button>',
+        '<button type="button" class="view-menu-row is-active" data-wildweb-toggle aria-label="Toggle WildWeb reports" '
+        'aria-pressed="true"><span class="view-menu-label">WildWeb reports</span>'
+        '<span class="view-menu-description">Map pins and incident list</span><span class="map-layer-switch" aria-hidden="true"></span></button>',
         '<button type="button" class="view-menu-row is-active" data-road-weather-layer-toggle aria-label="Toggle road weather" '
         'aria-pressed="true"><span class="view-menu-label">Road weather</span>'
         '<span class="view-menu-description">Rain · snow · ice by elevation</span><span class="map-layer-switch" aria-hidden="true"></span></button>',
@@ -3983,6 +4058,7 @@ def build_html(
 
     const markers = new Map();
     let incidentLayerVisible = window.localStorage.getItem("crestmap-incident-layer") !== "hidden";
+    let wildwebVisible = window.localStorage.getItem("crestmap-wildweb-reports") !== "hidden";
     let revealedIncidentKey = null;
     const cameraMarkers = new Map();
     const aircraftMarkers = new Map();
@@ -4194,6 +4270,26 @@ def build_html(
         window.localStorage.setItem("crestmap-incident-layer", incidentLayerVisible ? "shown" : "hidden");
         updateButton();
         updateMarkers();
+      }});
+    }}
+
+    function setupWildWebToggle() {{
+      const button = document.querySelector("[data-wildweb-toggle]");
+      if (!button) return;
+      const updateButton = () => {{
+        button.classList.toggle("is-active", wildwebVisible);
+        button.setAttribute("aria-pressed", String(wildwebVisible));
+        const description = button.querySelector(".view-menu-description");
+        if (description) description.textContent = wildwebVisible ? "Map pins and incident list" : "Hidden from map and list";
+      }};
+      updateButton();
+      button.addEventListener("click", () => {{
+        wildwebVisible = !wildwebVisible;
+        window.localStorage.setItem("crestmap-wildweb-reports", wildwebVisible ? "shown" : "hidden");
+        updateButton();
+        const selected = incidents.find((incident) => incident.event_key === selectedIncidentKey);
+        if (!wildwebVisible && selected?.source === "wildweb") showDefaultView();
+        else render({{ preserveViewport: true }});
       }});
     }}
 
@@ -6334,6 +6430,7 @@ def build_html(
 
     function applyIncidentSearch() {{
       const query = incidentSearch.value.trim().toLocaleLowerCase();
+      const displayedCount = list.querySelectorAll(".incident").length;
       let matches = 0;
       list.querySelectorAll(".incident").forEach((button) => {{
         const incident = incidents.find((item) => item.event_key === button.dataset.eventKey);
@@ -6343,8 +6440,8 @@ def build_html(
       }});
       incidentSearchClear.hidden = !query;
       incidentSearchStatus.textContent = query
-        ? `${{matches}} of ${{incidents.length}} incident${{incidents.length === 1 ? "" : "s"}}`
-        : `${{incidents.length}} incident${{incidents.length === 1 ? "" : "s"}}`;
+        ? `${{matches}} of ${{displayedCount}} incident${{displayedCount === 1 ? "" : "s"}}`
+        : `${{displayedCount}} incident${{displayedCount === 1 ? "" : "s"}}`;
       syncIncidentMarkersToSearch(query);
       list.scrollTop = 0;
       updateListScrollCue();
@@ -6366,18 +6463,34 @@ def build_html(
     function render(options = {{}}) {{
       clearRenderedIncidents();
       rebuildIncidentStackRanks();
-      window.chpLiveMap.incidents = incidents;
+      const linkedKey = new URLSearchParams(window.location.search).get("incident");
+      const displayedIncidents = incidents.filter((incident) => wildwebVisible
+        || incident.source !== "wildweb" || incident.event_key === linkedKey);
+      window.chpLiveMap.incidents = displayedIncidents;
       window.chpLiveMap?.workspace?.updateCount();
-      if (!incidents.length) {{
-        list.innerHTML = '<div class="empty">No matching incidents are currently stored.</div>';
-        detailsPanel.innerHTML = '<div class="empty">No matching incidents are currently stored.</div>';
+      if (!wildwebVisible && currentDataStatus) {{
+        const inWindow = displayedIncidents.filter((incident) => !incident._linked_outside_window);
+        const hours = Number(currentDataStatus.hours);
+        const hoursLabel = Number.isInteger(hours) ? String(hours) : String(currentDataStatus.hours);
+        const mapped = inWindow.filter((incident) => incident.latitude != null && incident.longitude != null).length;
+        const meta = document.getElementById("incident-summary-copy");
+        if (meta) meta.textContent = `${{currentDataStatus.active_count}} active · ${{inWindow.length}} shown in ${{hoursLabel}}h · ${{mapped}} mapped`;
+      }} else if (currentDataStatus) {{
+        updateSummary(currentDataStatus);
+      }}
+      if (!displayedIncidents.length) {{
+        const emptyMessage = incidents.length
+          ? 'No incidents are shown. Turn on WildWeb reports in Map layers to see them.'
+          : 'No matching incidents are currently stored.';
+        list.innerHTML = `<div class="empty">${{emptyMessage}}</div>`;
+        detailsPanel.innerHTML = `<div class="empty">${{emptyMessage}}</div>`;
         window.chpLiveMap?.workspace?.closeSheet();
         ensureCurrentRegionUrl();
         updateListScrollCue();
         return;
       }}
 
-      incidents.forEach((incident) => {{
+      displayedIncidents.forEach((incident) => {{
         const hasCoords = incident.latitude != null && incident.longitude != null;
         const statusClass = incidentStatusClass(incident);
         const statusText = incidentStatusLabel(incident);
@@ -6541,6 +6654,7 @@ def build_html(
     setupMapLayerMenu();
     setupAutomaticRegionHandoff();
     setupIncidentLayer();
+    setupWildWebToggle();
     initializeIncidentData();
     formatGeneratedAt();
     renderOfflineBasemap();

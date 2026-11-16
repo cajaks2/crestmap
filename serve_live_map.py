@@ -22,7 +22,8 @@ from push_notifications import (
     SOURCES as PUSH_SOURCES,
 )
 from generate_live_map import (
-    archived_wildweb_in_window,
+    collapse_duplicate_incidents,
+    wildweb_in_window,
     build_about_html,
     build_history_html,
     build_html,
@@ -300,6 +301,13 @@ def load_metric_status(conn, hours, region="forest", placeholder="?"):
     query = """
         SELECT
             status, source, source_reported_at, first_seen, last_seen,
+            center, region, incident_date, incident_time, type, location_desc, location,
+            (
+                SELECT o.details_json FROM observations o
+                WHERE o.event_key = events.event_key
+                  AND TRIM(o.details_json) NOT IN ('', '[]')
+                ORDER BY o.observed_at DESC, o.id DESC LIMIT 1
+            ) AS details_json,
             latest_observed_at, latitude, longitude
         FROM events
         WHERE region = {placeholder}
@@ -314,7 +322,14 @@ def load_metric_status(conn, hours, region="forest", placeholder="?"):
         query.format(placeholder=placeholder),
         (region, cutoff, cutoff, cutoff),
     ).fetchall()
-    rows = [row for row in rows if archived_wildweb_in_window(dict(row), cutoff_at)]
+    rows = [dict(row) for row in rows if wildweb_in_window(dict(row), cutoff_at)]
+    for row in rows:
+        try:
+            row["detail_entries"] = json.loads(row.pop("details_json") or "[]")
+        except (TypeError, ValueError):
+            row["detail_entries"] = []
+    rows.sort(key=lambda row: (row["status"] == "active", row["latest_observed_at"] or ""), reverse=True)
+    rows = collapse_duplicate_incidents(rows)
     return {
         "active_count": sum(row["status"] == "active" for row in rows),
         "reported_count": sum(row["status"] == "reported" for row in rows),

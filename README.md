@@ -21,6 +21,21 @@ WildWeb status is intentionally conservative:
 - A record older than `WILDWEB_MAX_AGE_HOURS` becomes `Archived`.
 - The source's incident `date` is interpreted as Pacific local time. A feed-level `retrieved` timestamp without a time zone is interpreted as UTC.
 
+The map, incident list, and incident counts show WildWeb reports for eight hours
+after Crestmap first sees them, even if the source continues listing them. The
+selected time window also applies to their source report time. Matching
+records with the same report time, type, name, location, and status appear once;
+their separate source records remain stored. The map's **WildWeb reports** layer
+toggle hides these reports from the map and incident list. This choice is saved
+in the browser's local storage and persists across visits on that browser; it
+does not use a cookie or server session. A direct incident link can still show
+the linked report.
+
+CHP records with different event IDs are also collapsed in views when their
+dispatch times are within 30 minutes and their type, location, and a substantial
+detail line match. Pins must also be nearby when both have coordinates.
+Both records stay stored, and either direct link remains available.
+
 The scraper is intentionally conservative:
 
 - It defaults to the Los Angeles and Ventura communications centers.
