@@ -945,8 +945,8 @@ def test_build_html_embeds_counts_and_escaped_incident_data():
     assert "map.panBy([p.x - x, p.y - y], {animate: true, duration: .28" in html
     assert "const targetY = Math.max" not in html
     assert "pointercancel" in html
-    assert "selected-pill" in html
-    assert '<span class="selected-pill">Open</span>' in html
+    assert "selected-pill" not in html
+    assert ".incident .incident-heading .source-pill" in html
     assert "background: #d4e6d5" in html
     assert "background: #dbe5d5" in html
     assert "#map.is-loading::after" not in html

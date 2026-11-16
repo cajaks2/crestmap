@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.344 - 2026-11-16
+
+- Keep source badges aligned at the right edge of incident cards, including
+  selected and linked reports. Use the card highlight instead of an Open label.
+- No schema migration or reauthentication is required.
+
 ### 0.1.343 - 2026-11-16
 
 - Keep WildWeb reports in the selected history window after eight hours, but

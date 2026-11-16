@@ -3461,19 +3461,6 @@ def build_html(
       background: #d4e6d5;
       box-shadow: inset 4px 0 0 #1f6840;
     }}
-    .incident .selected-pill {{
-      display: none;
-      flex: 0 0 auto;
-      margin: 2px 0 0;
-      padding: 0;
-      border-radius: 999px;
-      color: #1f6840;
-      background: transparent;
-      font-size: 11px;
-      font-weight: 800;
-      line-height: 1.35;
-      vertical-align: top;
-    }}
     .incident .status-pill {{
       display: inline-block;
       flex: 0 1 auto;
@@ -3487,9 +3474,6 @@ def build_html(
       font-size: 11px;
       font-weight: 800;
       line-height: 1.35;
-    }}
-    .incident[aria-current="true"] .selected-pill {{
-      display: inline-block;
     }}
     .status-pill {{
       display: inline-block;
@@ -3525,6 +3509,9 @@ def build_html(
       font-weight: 800;
       line-height: 1.35;
       text-transform: uppercase;
+    }}
+    .incident .incident-heading .source-pill {{
+      margin-left: auto;
     }}
     .mapless {{
       color: #8a5b22;
@@ -6529,9 +6516,8 @@ def build_html(
         button.innerHTML = `
           <span class="incident-heading">
             <span class="status-pill ${{statusClass}}">${{statusText}}</span>
-            <span class="source-pill">${{escapeHtml(sourceText)}}</span>
-            <span class="selected-pill">Open</span>
             ${{linkedOutsideWindow ? '<span class="linked-pill">Linked</span>' : ""}}
+            <span class="source-pill">${{escapeHtml(sourceText)}}</span>
           </span>
           <strong>${{escapeHtml(incident.type || "Incident")}}</strong>
           ${{locationLines.primary ? `<span class="incident-location-primary">${{escapeHtml(locationLines.primary)}}</span>` : ""}}
