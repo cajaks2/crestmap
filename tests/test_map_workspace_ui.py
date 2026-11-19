@@ -28,6 +28,7 @@ def test_overlapping_incident_markers_show_newest_report_and_count():
       const incidents = [
         {event_key: 'older-active', status: 'active', first_seen: '2026-11-04T10:00:00-08:00'},
         {event_key: 'newer-cleared', status: 'cleared', first_seen: '2026-11-05T10:00:00-08:00'},
+        {event_key: 'visible-neighbor', status: 'cleared', first_seen: '2026-11-03T10:00:00-08:00'},
         {event_key: 'distant', status: 'reported', first_seen: '2026-11-05T11:00:00-08:00'}
       ];
       let incidentStackRanks = new Map();
@@ -35,7 +36,8 @@ def test_overlapping_incident_markers_show_newest_report_and_count():
       const elements = new Map(incidents.map(item => [item.event_key, {
         dataset: {}, removeAttribute(name) { if (name === 'data-overlap-count') delete this.dataset.overlapCount; }
       }]));
-      const locations = {'older-active': [0, 0], 'newer-cleared': [0, 12], distant: [100, 100]};
+      const locations = {'older-active': [0, 12], 'newer-cleared': [0, 0],
+        'visible-neighbor': [0, 24], distant: [100, 100]};
       const markers = new Map(incidents.map(item => [item.event_key, {
         getLatLng: () => locations[item.event_key],
         getElement: () => elements.get(item.event_key)
@@ -50,9 +52,12 @@ def test_overlapping_incident_markers_show_newest_report_and_count():
       assert.ok(incidentMarkerZIndexOffset(incidents[0], true) > incidentMarkerZIndexOffset(incidents[2]));
       assert.deepEqual(overlappingVisibleIncidents(incidents[0]).map(item => item.event_key),
         ['newer-cleared', 'older-active']);
+      assert.deepEqual(overlappingVisibleIncidents(incidents[2]).map(item => item.event_key),
+        ['visible-neighbor'], 'a nearby visible pin is not counted through a chain');
       updateIncidentOverlapBadges();
       assert.equal(elements.get('newer-cleared').dataset.overlapCount, '2');
       assert.equal(elements.get('older-active').dataset.overlapCount, undefined);
+      assert.equal(elements.get('visible-neighbor').dataset.overlapCount, undefined);
       selectedIncidentKey = 'older-active';
       updateIncidentOverlapBadges();
       assert.equal(elements.get('older-active').dataset.overlapCount, '2');

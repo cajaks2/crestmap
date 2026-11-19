@@ -11,6 +11,12 @@ development eras and do not imply that every intermediate version number shipped
 
 ## Unreleased
 
+### 0.1.345 - 2026-11-19
+
+- Count only nearly coincident incident pins in overlap badges and incident
+  choices, so chains of nearby visible pins no longer inflate a badge.
+- No schema migration or reauthentication is required.
+
 ### 0.1.344 - 2026-11-16
 
 - Keep source badges aligned at the right edge of incident cards, including

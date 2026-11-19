@@ -5267,46 +5267,46 @@ def build_html(
       return (rank + 1) * 4096;
     }}
 
-    function overlappingVisibleIncidents(incident) {{
+    function visibleIncidentOverlapGroups() {{
       const visible = incidents.filter(item => {{
         const marker = markers.get(item.event_key);
         return marker && map.hasLayer(marker);
-      }});
+      }}).sort((a, b) =>
+        (incidentStackRanks.get(b.event_key) ?? 0) - (incidentStackRanks.get(a.event_key) ?? 0)
+      );
       const points = new Map(visible.map(item => [
         item.event_key, map.latLngToContainerPoint(markers.get(item.event_key).getLatLng())
       ]));
-      if (!points.has(incident.event_key)) return [];
-      const group = new Set([incident.event_key]);
-      for (let changed = true; changed;) {{
-        changed = false;
-        for (const item of visible) {{
-          if (group.has(item.event_key)) continue;
+      const assigned = new Set();
+      const groups = [];
+      for (const anchor of visible) {{
+        if (assigned.has(anchor.event_key)) continue;
+        const center = points.get(anchor.event_key);
+        // Only nearly coincident pins share a badge. Nearby visible pins do not.
+        const group = visible.filter(item => {{
+          if (assigned.has(item.event_key)) return false;
           const point = points.get(item.event_key);
-          if ([...group].some(key => {{
-            const other = points.get(key);
-            return Math.hypot(point.x - other.x, point.y - other.y) < 36;
-          }})) {{
-            group.add(item.event_key);
-            changed = true;
-          }}
-        }}
+          return Math.hypot(point.x - center.x, point.y - center.y) <= 12;
+        }});
+        group.forEach(item => assigned.add(item.event_key));
+        groups.push(group);
       }}
-      return visible.filter(item => group.has(item.event_key)).sort((a, b) =>
-        (incidentStackRanks.get(b.event_key) ?? 0) - (incidentStackRanks.get(a.event_key) ?? 0)
-      );
+      return groups;
+    }}
+
+    function overlappingVisibleIncidents(incident) {{
+      return visibleIncidentOverlapGroups().find(group =>
+        group.some(item => item.event_key === incident.event_key)
+      ) || [];
     }}
 
     function updateIncidentOverlapBadges() {{
-      const marked = new Set();
       markers.forEach(marker => marker.getElement()?.removeAttribute("data-overlap-count"));
-      incidents.forEach(incident => {{
-        if (marked.has(incident.event_key) || !markers.has(incident.event_key)) return;
-        const nearby = overlappingVisibleIncidents(incident);
-        if (nearby.length < 2) return;
-        nearby.forEach(item => marked.add(item.event_key));
-        const top = nearby.find(item => item.event_key === selectedIncidentKey) || nearby[0];
+      visibleIncidentOverlapGroups().forEach(group => {{
+        if (group.length < 2) return;
+        const top = group.find(item => item.event_key === selectedIncidentKey) || group[0];
         const element = markers.get(top.event_key)?.getElement();
-        if (element) element.dataset.overlapCount = nearby.length > 99 ? "99+" : String(nearby.length);
+        if (element) element.dataset.overlapCount = group.length > 99 ? "99+" : String(group.length);
       }});
     }}
 
